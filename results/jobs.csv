@@ -1,0 +1,6 @@
+id,priority,pickup,dropoff,robot,state,allocation,created,assigned,picked,delivered,wait_s,to_pickup_s,to_dropoff_s,total_s,distance_m,attempts,interrupted
+J001,routine,STORES,ASSEMBLY_A,robot1,DELIVERED,greedy,42.2,42.5,91.5,162.0,0.3,49.0,70.5,119.8,20.92,0,0
+E005,emergency,TOOL_CRIB,ASSEMBLY_A,robot2,DELIVERED,greedy,113.3,113.3,140.0,199.0,0.0,26.7,59.0,85.7,18.36,0,0
+J003,urgent,STORES,QC_LAB,robot1,DELIVERED,greedy,42.6,162.0,235.0,265.5,119.4,73.0,30.5,222.9,16.11,0,0
+J002,routine,TOOL_CRIB,ASSEMBLY_B,robot2,DELIVERED,greedy,42.4,42.5,79.0,274.5,0.1,36.5,195.5,232.1,16.0,0,1
+J004,routine,ASSEMBLY_B,TOOL_CRIB,robot2,DELIVERED,greedy,42.9,274.5,278.0,344.5,231.6,3.5,66.5,301.6,11.79,0,0

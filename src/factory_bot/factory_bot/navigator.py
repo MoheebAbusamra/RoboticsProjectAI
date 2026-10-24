@@ -144,7 +144,8 @@ class Navigator(Node):
             x, y, yaw = parts[0], parts[1], (parts[2] if len(parts) == 3 else None)
         return {"name": g, "x": x, "y": y, "yaw": yaw,
                 "algorithm": opts.get("algorithm", self.get("algorithm")),
-                "controller": opts.get("controller", self.get("controller"))}
+                "controller": opts.get("controller", self.get("controller")),
+                "speed": opts.get("speed")}                        # e.g. faster for emergencies
 
     def on_goal(self, msg):
         try:
@@ -158,8 +159,10 @@ class Navigator(Node):
         if pose is None:
             self.get_logger().warn(f"{self.robot}: no pose yet (is localization running?) - goal ignored")
             return
-        row, col = self.grid.world_to_cell(goal["x"], goal["y"])
-        goal["allow"] = self.grid.in_bounds(row, col) and bool(self.grid.restricted[row, col])   # INTO the QC lab
+        def in_qc(x, y):                          # inside an authorised-only zone (the QC lab)?
+            r, c = self.grid.world_to_cell(x, y)
+            return self.grid.in_bounds(r, c) and bool(self.grid.restricted[r, c])
+        goal["allow"] = in_qc(goal["x"], goal["y"]) or in_qc(pose[0], pose[1])   # going in or coming out
         result = plan(self.live.overlay(self.now()), pose[:2], (goal["x"], goal["y"]), goal["algorithm"],
                       allow_restricted=goal["allow"])
         goal.update(plan_ms=round(result.time_ms, 1), expanded=result.expanded, path_m=round(result.length_m, 2),
@@ -172,6 +175,8 @@ class Navigator(Node):
             return
         path = path_to_world(self.grid, result.path)
         self.follower = make_follower(goal["controller"], self.ctrl_settings)
+        if goal["speed"]:                         # emergency: drive faster (never above 0.45 m/s)
+            self.follower.speed = min(float(goal["speed"]), 0.45)
         self.follower.set_path(path)
         goal.update(path=path, all_paths=[path], start_time=self.now(), blocked_count=0, blocked_since=None,
                     min_front=math.inf, truth_track=[], next_check=self.now(), retry_at=0.0)

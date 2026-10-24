@@ -32,7 +32,7 @@ setup(
     description="Two-robot factory material delivery fleet",
     license="MIT",
     tests_require=["pytest"],
-            entry_points={
+    entry_points={
         "console_scripts": [
             "obstacle_mover = factory_bot.obstacle_mover:main",
             "mapping_driver = factory_bot.mapping_driver:main",
@@ -48,6 +48,9 @@ setup(
             "track_benchmark = factory_bot.track_benchmark:main",
             "navigator = factory_bot.navigator:main",
             "nav_test = factory_bot.nav_test:main",
+            "fleet_manager = factory_bot.fleet_manager:main",
+            "send_job = factory_bot.send_job:main",
+            "call_emergency = factory_bot.call_emergency:main",
         ],
     },
 )
