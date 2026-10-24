@@ -1,0 +1,49 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Map
+      Name: OGM map
+      Enabled: true
+      Topic:
+        Value: /ogm_map
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      Color Scheme: map
+      Alpha: 0.9
+    - Class: rviz_default_plugins/Map
+      Name: SLAM map (comparison)
+      Enabled: false
+      Topic:
+        Value: /map
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      Color Scheme: map
+      Alpha: 0.6
+    - Class: rviz_default_plugins/RobotModel
+      Name: robot1 model
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot1/robot_description
+        Durability Policy: Transient Local
+      TF Prefix: robot1
+    - Class: rviz_default_plugins/LaserScan
+      Name: robot1 scan
+      Enabled: true
+      Topic:
+        Value: /robot1/scan
+        Reliability Policy: Best Effort
+      Color Transformer: FlatColor
+      Color: 255; 60; 60
+      Size (m): 0.05
+      Style: Points
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 50

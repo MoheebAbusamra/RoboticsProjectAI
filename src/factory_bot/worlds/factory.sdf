@@ -1,0 +1,156 @@
+<?xml version="1.0" ?>
+
+<sdf version="1.9">
+  <world name="factory">
+
+    <!-- ===== 1. World engine: physics and sensors ===== -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.01</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+
+    <light type="directional" name="sun">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.2 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== 2. Walls: a 12 x 12 m room ===== -->
+    <model name="walls">
+      <static>true</static>
+      <link name="link">
+        <collision name="n"><pose>6 12 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></collision>
+        <visual name="nv"><pose>6 12 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></visual>
+        <collision name="s"><pose>6 0 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></collision>
+        <visual name="sv"><pose>6 0 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></visual>
+        <collision name="w"><pose>0 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></collision>
+        <visual name="wv"><pose>0 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></visual>
+        <collision name="e"><pose>12 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></collision>
+        <visual name="ev"><pose>12 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <!-- ===== 3. Static obstacles (these will appear in the SLAM map) ===== -->
+    <model name="storage_racks">
+      <static>true</static>
+      <link name="link">
+        <collision name="r1"><pose>2.7 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry></collision>
+        <visual name="r1v"><pose>2.7 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry>
+          <material><ambient>0.45 0.3 0.15 1</ambient><diffuse>0.55 0.35 0.2 1</diffuse></material></visual>
+        <collision name="r2"><pose>3.9 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry></collision>
+        <visual name="r2v"><pose>3.9 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry>
+          <material><ambient>0.45 0.3 0.15 1</ambient><diffuse>0.55 0.35 0.2 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="conveyor">
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><pose>7.0 8.0 0.3 0 0 0</pose><geometry><box><size>4.0 0.5 0.6</size></box></geometry></collision>
+        <visual name="cv"><pose>7.0 8.0 0.3 0 0 0</pose><geometry><box><size>4.0 0.5 0.6</size></box></geometry>
+          <material><ambient>0.2 0.2 0.25 1</ambient><diffuse>0.3 0.3 0.35 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="cnc_machines">
+      <static>true</static>
+      <link name="link">
+        <collision name="a"><pose>9.2 10.2 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry></collision>
+        <visual name="av"><pose>9.2 10.2 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry>
+          <material><ambient>0.3 0.4 0.45 1</ambient><diffuse>0.4 0.5 0.55 1</diffuse></material></visual>
+        <collision name="b"><pose>9.2 2.0 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry></collision>
+        <visual name="bv"><pose>9.2 2.0 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry>
+          <material><ambient>0.3 0.4 0.45 1</ambient><diffuse>0.4 0.5 0.55 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="pillars">
+      <static>true</static>
+      <link name="link">
+        <collision name="p1"><pose>3.0 3.5 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></collision>
+        <visual name="p1v"><pose>3.0 3.5 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></visual>
+        <collision name="p2"><pose>9.0 5.0 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></collision>
+        <visual name="p2v"><pose>9.0 5.0 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></visual>
+      </link>
+    </model>
+
+    <!-- ===== 4. Floor paint: visual only, no collision ===== -->
+    <model name="floor_paint">
+      <static>true</static>
+      <link name="link">
+        <visual name="hazard"><pose>6.0 4.25 0.005 0 0 0</pose><geometry><box><size>2.0 2.5 0.01</size></box></geometry>
+          <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.25 0.25 1</diffuse></material></visual>
+        <visual name="qc"><pose>6.0 10.75 0.005 0 0 0</pose><geometry><box><size>2.0 2.5 0.01</size></box></geometry>
+          <material><ambient>0.95 0.8 0.2 1</ambient><diffuse>0.95 0.8 0.25 1</diffuse></material></visual>
+        <visual name="slow"><pose>10.75 6.0 0.004 0 0 0</pose><geometry><box><size>2.3 8.0 0.008</size></box></geometry>
+          <material><ambient>0.95 0.65 0.35 1</ambient><diffuse>0.95 0.7 0.45 1</diffuse></material></visual>
+        <visual name="st_home1"><pose>1.0 1.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_home2"><pose>2.6 1.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_stores"><pose>1.2 10.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_tool"><pose>1.2 6.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_qc"><pose>6.0 10.8 0.007 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_asma"><pose>10.8 10.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+        <visual name="st_asmb"><pose>10.8 1.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- ===== 5. Moving obstacles, parked OUTSIDE the room until Step 7 ===== -->
+    <model name="forklift_1">
+      <static>true</static>
+      <pose>14 2 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.2 0.8 1.0</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.2 0.8 1.0</size></box></geometry>
+          <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material></visual>
+      </link>
+    </model>
+    <model name="worker_1">
+      <static>true</static>
+      <pose>14 4 0.85 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><cylinder><radius>0.25</radius><length>1.7</length></cylinder></geometry></collision>
+        <visual name="v"><geometry><cylinder><radius>0.25</radius><length>1.7</length></cylinder></geometry>
+          <material><ambient>0.1 0.6 0.3 1</ambient><diffuse>0.1 0.7 0.35 1</diffuse></material></visual>
+      </link>
+    </model>
+    <model name="pallet_1">
+      <static>true</static>
+      <pose>14 6 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.0 1.0 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.0 1.0 0.6</size></box></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

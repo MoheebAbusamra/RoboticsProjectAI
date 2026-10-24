@@ -1,0 +1,24 @@
+# Settings for planning (Step 10-11) and path following (Step 12).
+
+grid:
+  robot_radius: 0.25      # m: half the robot's diagonal (0.36 x 0.30 body -> 0.234, rounded up)
+  safety_margin: 0.05     # m: extra clearance on top of the radius
+  soft_band: 0.20         # m: beyond the hard limit, cells cost more (keeps paths off walls)
+  near_wall_cost: 2.0     # cost of a soft-band cell (free floor = 1.0)
+  slow_cost: 2.0          # cost of a cell in a "slow" zone
+
+controller:               # shared by PID and Pure Pursuit
+  lookahead: 0.40         # m: target point this far ahead on the path
+  speed: 0.25             # m/s: cruising speed (robot limit 0.5)
+  max_w: 1.5              # rad/s: turning limit (robot limit 1.8)
+  goal_tolerance: 0.10    # m: "arrived"
+  slow_radius: 0.50       # m: start slowing down this close to the goal
+  pid:
+    kp: 2.0               # turn harder the bigger the heading error
+    ki: 0.0               # no steady bias to remove here, so off (course: "many leave it at 0")
+    kd: 0.10              # a little damping against overshoot
+    integral_limit: 0.5   # anti-windup
+  pure_pursuit:
+    min_speed: 0.06       # m/s: never crawl slower than this on tight arcs
+    regulate: true        # slow down on tight arcs ...
+    regulation_gain: 0.5  # ... speed = speed / (1 + gain * curvature): 1 m radius arc -> 2/3 speed

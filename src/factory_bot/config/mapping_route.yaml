@@ -1,0 +1,28 @@
+# Automatic mapping route for robot1. 
+# Waypoints are in GAZEBO coordinates (same numbers as worlds/factory.sdf).
+# The driver steers with Gazebo's ground truth, which is also in Gazebo coordinates.
+# Automatic mapping route for robot1 (version 2: gentler driving). 
+# Waypoints are in GAZEBO coordinates (same numbers as worlds/factory.sdf).
+robot: robot1
+
+speed: 0.20            # m/s driving straight (was 0.25)
+turn_speed: 0.30       # rad/s max when turning on the spot (was 0.5): less wheel slip
+steer_limit: 0.30      # rad/s max steering while driving (was fixed at 0.5)
+pause_after_turn: 1.0  # s to stand still after each turn and at each waypoint (new)
+tolerance: 0.10        # m: "close enough" to a waypoint
+stop_distance: 0.35    # m: safety stop distance in front
+
+waypoints_gazebo:
+  - [11.0, 1.0]    # 1  bottom aisle, left to right
+  - [11.0, 11.3]   # 2  up the right corridor
+  - [1.0, 11.3]    # 3  top aisle, right to left
+  - [1.0, 6.5]     # 4  down the left aisle
+  - [10.5, 6.5]    # 5  main aisle, left to right
+  - [10.5, 9.0]    # 6  up beside the conveyor's right end
+  - [5.6, 9.0]     # 7  behind the conveyor, right to left
+  - [10.5, 9.0]    # 8  back out
+  - [10.5, 6.5]    # 9  down to the main aisle
+  - [7.5, 6.5]     # 10 main aisle, a bit left
+  - [7.5, 2.8]     # 11 down through the middle
+  - [3.0, 2.2]     # 12 across the bottom-middle
+  - [1.0, 1.0]     # 13 home (loop closure)

@@ -1,0 +1,7 @@
+image: factory_map_v1_untuned.pgm
+mode: trinary
+resolution: 0.050
+origin: [-1.386, -4.079, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196

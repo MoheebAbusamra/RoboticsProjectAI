@@ -1,0 +1,11 @@
+# Factory stations in the MAP frame (= Gazebo minus 1.0, 1.0); each is a blue disc on the floor.
+# yaw = the direction the robot should face when it arrives (radians).
+
+stations:
+  HOME_1:     {x: 0.0, y: 0.0, yaw: 0.0}
+  HOME_2:     {x: 1.6, y: 0.0, yaw: 0.0}
+  STORES:     {x: 0.2, y: 9.5, yaw: 1.57}
+  TOOL_CRIB:  {x: 0.2, y: 5.0, yaw: 3.14}
+  QC_LAB:     {x: 5.0, y: 9.8, yaw: 1.57}
+  ASSEMBLY_A: {x: 9.8, y: 9.5, yaw: 0.0}
+  ASSEMBLY_B: {x: 9.8, y: 0.5, yaw: 0.0}

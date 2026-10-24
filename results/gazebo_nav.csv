@@ -1,0 +1,6 @@
+robot,name,algorithm,controller,result,plan_ms,expanded,path_m,travel_s,driven_m,goal_error_m,heading_error_deg,cross_track_mean_m,cross_track_max_m,min_front_m,blocked_count,replans,replan_ms,reason
+robot1,TOOL_CRIB,astar,pure_pursuit,ARRIVED,23.3,156,5.08,28.1,4.95,0.136,5.2,0.039,0.092,0.93,0,0,0.0,
+robot1,STORES,astar,pure_pursuit,ARRIVED,1.2,93,4.6,23.5,4.55,0.143,6.2,0.085,0.184,0.93,0,0,0.0,
+robot1,ASSEMBLY_A,astar,pure_pursuit,ARRIVED,61.1,5483,11.93,67.2,11.44,0.175,5.2,0.044,0.122,0.66,0,0,0.0,
+robot1,ASSEMBLY_B,astar,pure_pursuit,ARRIVED,118.5,12604,11.23,84.0,13.34,0.109,5.6,0.04,0.13,0.68,0,1,37.6,
+robot1,HOME_1,astar,pure_pursuit,ARRIVED,7.2,331,9.97,51.4,9.89,0.076,4.9,0.014,0.122,0.81,0,0,0.0,

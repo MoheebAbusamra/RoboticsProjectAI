@@ -1,0 +1,9 @@
+# Factory rules painted on the floor, as rectangles in the MAP frame (= Gazebo minus 1.0, 1.0).
+#   forbidden        -> never planned through (hazard press area)
+#   authorized_only  -> only for jobs that are allowed in (quality-control lab)
+#   slow             -> allowed but costs more, and later the robot drives slower there
+# AI-assisted (Claude): cite in report.
+zones:
+  HAZARD_PRESS:  {x_min: 4.0, x_max: 6.0,  y_min: 2.0, y_max: 4.5,  rule: forbidden}
+  QC_LAB:        {x_min: 4.0, x_max: 6.0,  y_min: 8.5, y_max: 11.0, rule: authorized_only}
+  ASSEMBLY_SLOW: {x_min: 8.6, x_max: 10.9, y_min: 1.0, y_max: 9.0,  rule: slow, max_speed: 0.15}

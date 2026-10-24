@@ -1,0 +1,11 @@
+robot,name,algorithm,controller,result,plan_ms,expanded,path_m,travel_s,driven_m,goal_error_m,heading_error_deg,cross_track_mean_m,cross_track_max_m,min_front_m,blocked_count,reason
+robot1,TOOL_CRIB,astar,pid,ARRIVED,6.7,313,5.0,24.9,4.86,0.148,4.9,0.031,0.078,0.91,0,
+robot1,STORES,astar,pid,ARRIVED,2.9,93,4.6,20.6,4.51,0.168,0.3,0.08,0.126,0.91,0,
+robot1,ASSEMBLY_A,astar,pid,ARRIVED,66.0,5511,11.98,49.6,11.31,0.184,5.5,0.044,0.159,0.7,0,
+robot1,ASSEMBLY_B,astar,pid,ARRIVED,197.2,12553,11.18,55.9,10.64,0.167,5.5,0.041,0.132,0.67,0,
+robot1,HOME_1,astar,pid,ARRIVED,9.8,608,10.06,47.2,9.9,0.077,5.8,0.009,0.07,0.86,0,
+robot1,TOOL_CRIB,astar,pure_pursuit,ARRIVED,15.3,297,5.04,29.1,4.98,0.154,5.2,0.04,0.117,0.89,0,
+robot1,STORES,astar,pure_pursuit,ARRIVED,0.8,184,4.62,24.4,4.54,0.182,4.9,0.087,0.176,0.9,0,
+robot1,ASSEMBLY_A,astar,pure_pursuit,ARRIVED,80.1,5511,11.98,67.0,11.48,0.171,5.2,0.042,0.122,0.67,0,
+robot1,ASSEMBLY_B,astar,pure_pursuit,ARRIVED,221.8,12553,11.18,72.2,10.77,0.141,5.3,0.038,0.13,0.66,0,
+robot1,HOME_1,astar,pure_pursuit,ARRIVED,16.4,608,10.06,52.1,9.94,0.08,6.6,0.015,0.104,0.87,0,
