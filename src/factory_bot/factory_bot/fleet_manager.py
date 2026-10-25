@@ -118,6 +118,7 @@ class FleetManager(Node):
         goal = (rec["status"] or {}).get("goal") or {}
         rec["sent_seq"], rec["target"] = goal.get("seq", 0), station
         request = {"goal": station, "algorithm": self.get("algorithm")}
+        request["priority"] = rec["job"].priority if rec["job"] is not None else "routine"
         if rec["job"] is not None and rec["job"].priority == "emergency":
             request["speed"] = self.get("emergency_speed")
         self.goto[robot].publish(String(data=json.dumps(request)))
@@ -154,6 +155,7 @@ class FleetManager(Node):
             elif state == "LOADING" and now >= rec["until"]:
                 job.state, job.picked = "PICKED", now
                 rec["state"] = "TO_DROPOFF"
+                self.publish_state()  # show the loaded prop before starting the delivery leg
                 self.send(r, job.dropoff)
             elif state == "TO_DROPOFF":
                 result = self.leg_result(r)
@@ -165,6 +167,7 @@ class FleetManager(Node):
                     self.leg_failed(r, now)
             elif state == "UNLOADING" and now >= rec["until"]:
                 job.state, job.delivered = "DELIVERED", now
+                self.publish_state()  # deposit the prop at the end of the existing unload dwell
                 self.get_logger().info(f"DELIVERED {job.id} by {r}: waited {job.assigned - job.created:.0f} s, "
                                        f"total {job.delivered - job.created:.0f} s, {job.distance_m:.1f} m")
                 if job.priority == "emergency":
@@ -224,7 +227,7 @@ class FleetManager(Node):
             key = (robot, job.pickup)
             if key not in costs:
                 pose, s = self.pose_of(robot), self.stations[job.pickup]
-                allow = job.pickup == "QC_LAB"
+                allow = self.grid.restricted_access(pose[:2], (s["x"], s["y"]))
                 result = plan(self.grid, pose[:2], (s["x"], s["y"]), "astar", allow_restricted=allow)
                 costs[key] = result.length_m if result.success else math.inf
             return costs[key]
@@ -293,7 +296,12 @@ class FleetManager(Node):
                "queue": [{"id": j.id, "priority": j.priority, "pickup": j.pickup, "dropoff": j.dropoff,
                           "waiting_s": round(now - j.created, 1)} for j in waiting_in_order(self.jobs)],
                "delivered": sum(j.state == "DELIVERED" for j in self.jobs),
-               "failed": sum(j.state == "FAILED" for j in self.jobs)}
+               "failed": sum(j.state == "FAILED" for j in self.jobs),
+               # Additive scene metadata only: no cargo policy affects job scheduling/navigation.
+               "cargo_jobs": [{"id": j.id, "robot": j.robot, "pickup": j.pickup, "dropoff": j.dropoff,
+                               "created": j.created, "state": j.state}
+                              for j in ([j for j in self.jobs if j.state in ("ASSIGNED", "PICKED")]
+                                        + [j for j in self.jobs if j.state in ("DELIVERED", "FAILED")][-16:])]}
         self.state_pub.publish(String(data=json.dumps(out)))
 
 

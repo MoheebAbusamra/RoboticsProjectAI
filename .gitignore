@@ -4,3 +4,13 @@ install/
 log/
 .catkin_workspace
 *.pyc
+
+# Python and test artifacts
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+work/
+
+/backups/
+/results/

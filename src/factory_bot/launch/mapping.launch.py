@@ -50,7 +50,7 @@ def generate_launch_description():
 
     bags = os.path.expanduser("~/factory_ws/bags")
     os.makedirs(bags, exist_ok=True)
-    bag_name = os.path.join(bags, "mapping_" + datetime.now().strftime("%Y%m%d_%H%M%S"))
+    bag_name = os.path.join(bags, "mapping_industrial_" + datetime.now().strftime("%Y%m%d_%H%M%S"))
     record = ExecuteProcess(
         cmd=["ros2", "bag", "record", "-o", bag_name, "--topics",
              "/robot1/scan", "/robot1/odom", "/robot1/ground_truth", "/robot1/imu","/tf", "/tf_static"],

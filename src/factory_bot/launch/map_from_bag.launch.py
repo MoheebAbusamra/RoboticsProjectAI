@@ -26,9 +26,9 @@ def launch_setup(context, *args, **kwargs):
     share = get_package_share_directory("factory_bot")
     bag = LaunchConfiguration("bag").perform(context)
     if bag == "latest":                       # newest folder in ~/factory_ws/bags
-        found = sorted(glob.glob(os.path.expanduser("~/factory_ws/bags/mapping_*")))
+        found = sorted(glob.glob(os.path.expanduser("~/factory_ws/bags/mapping_industrial_*")))
         if not found:
-            return [LogInfo(msg="No recording found in ~/factory_ws/bags - run mapping.launch.py first")]
+            return [LogInfo(msg="No industrial-layout recording found - run mapping.launch.py first (older recordings use the old layout)")]
         bag = found[-1]
     rate = LaunchConfiguration("rate").perform(context)
 

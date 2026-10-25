@@ -17,6 +17,12 @@
   <xacro:property name="caster_radius"    value="0.025"/>
   <xacro:property name="body_rgba" value="${'0.20 0.47 0.96 1' if ns == 'robot1' else '0.94 0.55 0.16 1'}"/>
 
+  <xacro:arg name="cameras" default="true"/>
+  <xacro:arg name="camera_width" default="512"/>
+  <xacro:arg name="camera_height" default="288"/>
+  <xacro:arg name="camera_rate" default="8.0"/>
+  <xacro:property name="robot_visual" value="${'blue' if ns == 'robot1' else 'amber'}"/>
+
   <!-- ===== 2. Mass helpers (physics needs inertia for every moving part) ===== -->
   <xacro:macro name="box_inertia" params="m x y z">
     <inertial>
@@ -38,8 +44,7 @@
 
   <link name="base_link">
     <visual>
-      <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
-      <material name="body_${ns}"><color rgba="${body_rgba}"/></material>
+      <geometry><mesh filename="package://factory_bot/models/robot_premium/meshes/body_${robot_visual}.obj"/></geometry>
     </visual>
     <collision>
       <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
@@ -57,9 +62,7 @@
   <xacro:macro name="wheel" params="prefix reflect">
     <link name="${prefix}_wheel_link">
       <visual>
-        <origin rpy="1.5707963 0 0"/>
-        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
-        <material name="wheel_black"><color rgba="0.1 0.1 0.1 1"/></material>
+        <geometry><mesh filename="package://factory_bot/models/robot_premium/meshes/wheel.obj"/></geometry>
       </visual>
        <collision>
         <geometry><sphere radius="${wheel_radius}"/></geometry>
@@ -114,9 +117,7 @@
   <link name="laser_link">
     <!-- Housing drawn BELOW the sensor point: the lidar must not see its own case. -->
     <visual>
-      <origin xyz="0 0 -0.04"/>
-      <geometry><cylinder radius="0.035" length="0.03"/></geometry>
-      <material name="wheel_black"><color rgba="0.1 0.1 0.1 1"/></material>
+      <geometry><mesh filename="package://factory_bot/models/robot_premium/meshes/lidar.obj"/></geometry>
     </visual>
     <inertial>
       <mass value="0.15"/>
@@ -127,6 +128,20 @@
     <parent link="base_link"/>
     <child link="laser_link"/>
     <origin xyz="0.10 0 ${base_height/2 + 0.06}"/>
+  </joint>
+
+  <!-- Low front safety lidar: ahead of our own shell, at the other robot's body height.
+       The original 360-degree SLAM lidar and its reference-map scan plane stay unchanged. -->
+  <link name="obstacle_laser_link">
+    <visual>
+      <origin xyz="-0.015 0 0"/>
+      <geometry><box size="0.018 0.045 0.018"/></geometry>
+      <material name="safety_lidar_graphite"><color rgba="0.06 0.08 0.09 1"/></material>
+    </visual>
+  </link>
+  <joint name="obstacle_laser_joint" type="fixed">
+    <parent link="base_link"/><child link="obstacle_laser_link"/>
+    <origin xyz="0.205 0 0.010"/>
   </joint>
 
   <link name="imu_link">
@@ -141,6 +156,18 @@
     <origin xyz="0 0 0.02"/>
   </joint>
   
+  <!-- Visual camera lens is in the shell. Massless fixed sensor frames retain original dynamics. -->
+  <link name="camera_link"/>
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/><child link="camera_link"/>
+    <origin xyz="0.189 0 0.052"/>
+  </joint>
+  <link name="camera_optical_frame"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/><child link="camera_optical_frame"/>
+    <origin rpy="-1.57079632679 0 -1.57079632679"/>
+  </joint>
+
   <xacro:include filename="$(find factory_bot)/urdf/fleet_bot.ros2_control.xacro"/>
   
   <xacro:include filename="$(find factory_bot)/urdf/fleet_bot.gazebo.xacro"/>

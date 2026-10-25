@@ -1,0 +1,27 @@
+newmtl SF_static_factory_matte
+Ka 0.35 0.35 0.35
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 28.000000000000004
+d 1
+illum 2
+map_Kd ../textures/static_factory_atlas.jpg
+
+newmtl SF_static_factory_metal
+Ka 0.35 0.35 0.35
+Kd 1 1 1
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/static_factory_atlas.jpg
+
+newmtl SF_static_factory_glow
+Ka 0.35 0.35 0.35
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 28.000000000000004
+d 1
+illum 2
+map_Kd ../textures/static_factory_atlas.jpg
+Ke 0.25 0.25 0.25

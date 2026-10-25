@@ -30,7 +30,7 @@ def main():
     rclpy.init(args=ros_args)
     node = rclpy.create_node("send_job")
     pub = node.create_publisher(String, "/delivery_request", 10)
-    deadline = time.time() + 5.0
+    deadline = time.time() + 15.0
     while pub.get_subscription_count() == 0 and time.time() < deadline:   # wait for the fleet manager
         rclpy.spin_once(node, timeout_sec=0.1)
     if pub.get_subscription_count() == 0:

@@ -1,0 +1,195 @@
+newmtl screwdriver_set_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/screwdriver_set_atlas.jpg
+
+newmtl screwdriver_set_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/screwdriver_set_atlas.jpg
+
+newmtl screwdriver_set_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/screwdriver_set_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl toolbox_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/toolbox_atlas.jpg
+
+newmtl toolbox_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/toolbox_atlas.jpg
+
+newmtl toolbox_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/toolbox_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl sample_vials_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/sample_vials_atlas.jpg
+
+newmtl sample_vials_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/sample_vials_atlas.jpg
+
+newmtl sample_vials_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/sample_vials_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl parts_crate_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/parts_crate_atlas.jpg
+
+newmtl parts_crate_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/parts_crate_atlas.jpg
+
+newmtl parts_crate_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/parts_crate_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl component_tray_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/component_tray_atlas.jpg
+
+newmtl component_tray_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/component_tray_atlas.jpg
+
+newmtl component_tray_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/component_tray_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl battery_pack_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/battery_pack_atlas.jpg
+
+newmtl battery_pack_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/battery_pack_atlas.jpg
+
+newmtl battery_pack_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/battery_pack_atlas.jpg
+Ke 0.5000 0.5000 0.5000
+
+newmtl station_tray_matte
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/station_tray_atlas.jpg
+
+newmtl station_tray_metal
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.3295 0.3295 0.3295
+Ns 68.0
+d 1
+illum 2
+map_Kd ../textures/station_tray_atlas.jpg
+
+newmtl station_tray_glow
+Ka 0.35000 0.35000 0.35000
+Kd 1.00000 1.00000 1.00000
+Ks 0.0500 0.0500 0.0500
+Ns 28.0
+d 1
+illum 2
+map_Kd ../textures/station_tray_atlas.jpg
+Ke 0.5000 0.5000 0.5000

@@ -1,156 +1,1034 @@
-<?xml version="1.0" ?>
-
+<?xml version='1.0' encoding='utf-8'?>
 <sdf version="1.9">
   <world name="factory">
-
-    <!-- ===== 1. World engine: physics and sensors ===== -->
-    <physics name="1ms" type="ignored">
+    <physics name="factory_100hz" type="ignored">
       <max_step_size>0.01</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
-    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
-    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
-    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre</render_engine>
     </plugin>
-    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
-
-    <light type="directional" name="sun">
-      <cast_shadows>false</cast_shadows>
-      <pose>0 0 10 0 0 0</pose>
-      <diffuse>0.9 0.9 0.9 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <direction>-0.5 0.2 -0.9</direction>
-    </light>
-
-    <model name="ground_plane">
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu" />
+    <model name="factory_structure">
       <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
+      <link name="structure">
+        <collision name="floor">
+          <pose>8 7 -0.06 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>20 18 0.12</size>
+            </box>
+          </geometry>
         </collision>
-        <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
-          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        <collision name="north">
+          <pose>8 14 1.55 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>16 0.16 3.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="south">
+          <pose>8 0 0.5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>16 0.16 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="west">
+          <pose>0 7 0.5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.16 14 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="east">
+          <pose>16 7 1.55 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.16 14 3.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="column_0">
+          <pose>5.8 8.8 1.85 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.28 0.28 3.7</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="column_1">
+          <pose>10.1 5.8 1.85 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.28 0.28 3.7</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="rack_1">
+          <pose>2.7 9.7 0.18 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.8 3.8 0.36</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="rack_2">
+          <pose>4.5 9.7 0.18 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.8 3.8 0.36</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="pallet_stack_0">
+          <pose>2.5 3.8 0.45 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.05 1.0 0.9</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="pallet_stack_1">
+          <pose>4.0 3.8 0.45 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.05 1.0 0.9</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="tool_cabinet">
+          <pose>0.46 5.7 0.75 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.7 1.8 1.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="cnc_1">
+          <pose>12.5 11.8 0.29 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.0 1.6 0.58</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="cnc_2">
+          <pose>13.65 3.5 0.29 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.7 1.7 0.58</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="conveyor">
+          <pose>12.5 8.7 0.3 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>4.4 0.85 0.6</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="press_base">
+          <pose>7.5 3.5 0.4 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.8 1.5 0.8</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="qc_bench">
+          <pose>7.1 13.0 0.43 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.8 0.7 0.86</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="qc_cabinet">
+          <pose>9.3 13 0.8 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.8 0.7 1.6</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="HOME_1_charger">
+          <pose>1.0 0.25 0.22 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.65 0.28 0.44</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="HOME_2_charger">
+          <pose>2.6 0.25 0.22 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.65 0.28 0.44</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="static_factory">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/static_factory.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <visual name="static_ground">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/static_ground.obj</uri>
+            </mesh>
+          </geometry>
         </visual>
       </link>
     </model>
-
-    <!-- ===== 2. Walls: a 12 x 12 m room ===== -->
-    <model name="walls">
-      <static>true</static>
-      <link name="link">
-        <collision name="n"><pose>6 12 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></collision>
-        <visual name="nv"><pose>6 12 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></visual>
-        <collision name="s"><pose>6 0 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></collision>
-        <visual name="sv"><pose>6 0 0.5 0 0 0</pose><geometry><box><size>12 0.15 1.0</size></box></geometry></visual>
-        <collision name="w"><pose>0 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></collision>
-        <visual name="wv"><pose>0 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></visual>
-        <collision name="e"><pose>12 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></collision>
-        <visual name="ev"><pose>12 6 0.5 0 0 0</pose><geometry><box><size>0.15 12 1.0</size></box></geometry></visual>
-      </link>
-    </model>
-
-    <!-- ===== 3. Static obstacles (these will appear in the SLAM map) ===== -->
-    <model name="storage_racks">
-      <static>true</static>
-      <link name="link">
-        <collision name="r1"><pose>2.7 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry></collision>
-        <visual name="r1v"><pose>2.7 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry>
-          <material><ambient>0.45 0.3 0.15 1</ambient><diffuse>0.55 0.35 0.2 1</diffuse></material></visual>
-        <collision name="r2"><pose>3.9 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry></collision>
-        <visual name="r2v"><pose>3.9 8.7 0.5 0 0 0</pose><geometry><box><size>0.6 3.0 1.0</size></box></geometry>
-          <material><ambient>0.45 0.3 0.15 1</ambient><diffuse>0.55 0.35 0.2 1</diffuse></material></visual>
-      </link>
-    </model>
-
-    <model name="conveyor">
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><pose>7.0 8.0 0.3 0 0 0</pose><geometry><box><size>4.0 0.5 0.6</size></box></geometry></collision>
-        <visual name="cv"><pose>7.0 8.0 0.3 0 0 0</pose><geometry><box><size>4.0 0.5 0.6</size></box></geometry>
-          <material><ambient>0.2 0.2 0.25 1</ambient><diffuse>0.3 0.3 0.35 1</diffuse></material></visual>
-      </link>
-    </model>
-
-    <model name="cnc_machines">
-      <static>true</static>
-      <link name="link">
-        <collision name="a"><pose>9.2 10.2 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry></collision>
-        <visual name="av"><pose>9.2 10.2 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry>
-          <material><ambient>0.3 0.4 0.45 1</ambient><diffuse>0.4 0.5 0.55 1</diffuse></material></visual>
-        <collision name="b"><pose>9.2 2.0 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry></collision>
-        <visual name="bv"><pose>9.2 2.0 0.5 0 0 0</pose><geometry><box><size>1.2 1.0 1.0</size></box></geometry>
-          <material><ambient>0.3 0.4 0.45 1</ambient><diffuse>0.4 0.5 0.55 1</diffuse></material></visual>
-      </link>
-    </model>
-
-    <model name="pillars">
-      <static>true</static>
-      <link name="link">
-        <collision name="p1"><pose>3.0 3.5 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></collision>
-        <visual name="p1v"><pose>3.0 3.5 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></visual>
-        <collision name="p2"><pose>9.0 5.0 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></collision>
-        <visual name="p2v"><pose>9.0 5.0 0.5 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>1.0</length></cylinder></geometry></visual>
-      </link>
-    </model>
-
-    <!-- ===== 4. Floor paint: visual only, no collision ===== -->
-    <model name="floor_paint">
-      <static>true</static>
-      <link name="link">
-        <visual name="hazard"><pose>6.0 4.25 0.005 0 0 0</pose><geometry><box><size>2.0 2.5 0.01</size></box></geometry>
-          <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.25 0.25 1</diffuse></material></visual>
-        <visual name="qc"><pose>6.0 10.75 0.005 0 0 0</pose><geometry><box><size>2.0 2.5 0.01</size></box></geometry>
-          <material><ambient>0.95 0.8 0.2 1</ambient><diffuse>0.95 0.8 0.25 1</diffuse></material></visual>
-        <visual name="slow"><pose>10.75 6.0 0.004 0 0 0</pose><geometry><box><size>2.3 8.0 0.008</size></box></geometry>
-          <material><ambient>0.95 0.65 0.35 1</ambient><diffuse>0.95 0.7 0.45 1</diffuse></material></visual>
-        <visual name="st_home1"><pose>1.0 1.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_home2"><pose>2.6 1.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_stores"><pose>1.2 10.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_tool"><pose>1.2 6.0 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_qc"><pose>6.0 10.8 0.007 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_asma"><pose>10.8 10.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-        <visual name="st_asmb"><pose>10.8 1.5 0.006 0 0 0</pose><geometry><cylinder><radius>0.3</radius><length>0.01</length></cylinder></geometry>
-          <material><ambient>0.2 0.4 0.9 1</ambient><diffuse>0.2 0.4 0.9 1</diffuse></material></visual>
-      </link>
-    </model>
-
-    <!-- ===== 5. Moving obstacles, parked OUTSIDE the room until Step 7 ===== -->
     <model name="forklift_1">
       <static>true</static>
-      <pose>14 2 0.5 0 0 0</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>1.2 0.8 1.0</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>1.2 0.8 1.0</size></box></geometry>
-          <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material></visual>
+      <pose>19 2 0 0 0 0</pose>
+      <link name="body">
+        <collision name="body">
+          <pose>0.28 0 1.05 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.10 0.94 2.10</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="forklift">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/forklift.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <visual name="lidar_outer_envelope">
+          <pose>0.28 0 1.05 0 0 0</pose>
+          <cast_shadows>false</cast_shadows>
+          <visibility_flags>2147483648</visibility_flags>
+          <geometry>
+            <box>
+              <size>2.10 0.94 2.10</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.3 0.3 0.3 1</diffuse>
+          </material>
+        </visual>
       </link>
     </model>
     <model name="worker_1">
       <static>true</static>
-      <pose>14 4 0.85 0 0 0</pose>
-      <link name="link">
-        <collision name="c"><geometry><cylinder><radius>0.25</radius><length>1.7</length></cylinder></geometry></collision>
-        <visual name="v"><geometry><cylinder><radius>0.25</radius><length>1.7</length></cylinder></geometry>
-          <material><ambient>0.1 0.6 0.3 1</ambient><diffuse>0.1 0.7 0.35 1</diffuse></material></visual>
+      <pose>19 4 0 0 0 0</pose>
+      <link name="body">
+        <collision name="body">
+          <pose>0 0 0.87 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.36</radius>
+              <length>1.74</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="worker">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/worker.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="worker_2">
+      <static>true</static>
+      <pose>19 6 0 0 0 0</pose>
+      <link name="body">
+        <collision name="body">
+          <pose>0 0 0.87 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.36</radius>
+              <length>1.74</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="worker">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/worker.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
       </link>
     </model>
     <model name="pallet_1">
       <static>true</static>
-      <pose>14 6 0.3 0 0 0</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>1.0 1.0 0.6</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>1.0 1.0 0.6</size></box></geometry>
-          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material></visual>
+      <pose>19 8 0 0 0 0</pose>
+      <link name="body">
+        <collision name="body">
+          <pose>0 0 0.45 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.05 1.0 0.9</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="pallet">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://industrial_factory/meshes/pallet.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
       </link>
     </model>
-
+    <gui fullscreen="false">
+      <camera name="user_camera">
+        <pose>21 -9 18 0 .66 2.28</pose>
+        <view_controller>orbit</view_controller>
+      </camera>
+    </gui>
+    <scene>
+      <ambient>.21 .235 .26 1</ambient>
+      <background>.085 .11 .13 1</background>
+      <shadows>true</shadows>
+    </scene>
+    <light type="directional" name="overhead_key">
+      <pose>8 7 8 0 0 0</pose>
+      <direction>.35 -.55 -1</direction>
+      <diffuse>.78 .83 .90 1</diffuse>
+      <specular>.42 .44 .48 1</specular>
+      <cast_shadows>true</cast_shadows>
+      <visualize>false</visualize>
+    </light>
+    <light type="directional" name="wall_fill">
+      <pose>8 7 7 0 0 0</pose>
+      <direction>-.5 .5 -.8</direction>
+      <diffuse>.24 .26 .29 1</diffuse>
+      <specular>.06 .07 .08 1</specular>
+      <cast_shadows>false</cast_shadows>
+      <visualize>false</visualize>
+    </light>
+    <light type="spot" name="ceiling_light_1">
+      <pose>2.0 5.1 3.48 0 0 0</pose>
+      <direction>0 0 -1</direction>
+      <diffuse>1.0 .95 .86 1</diffuse>
+      <specular>.38 .35 .30 1</specular>
+      <cast_shadows>false</cast_shadows>
+      <visualize>false</visualize>
+      <attenuation>
+        <range>13</range>
+        <constant>.65</constant>
+        <linear>.06</linear>
+        <quadratic>.045</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>.65</inner_angle>
+        <outer_angle>1.15</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+    </light>
+    <light type="spot" name="ceiling_light_2">
+      <pose>13.8 5.1 3.48 0 0 0</pose>
+      <direction>0 0 -1</direction>
+      <diffuse>1.0 .95 .86 1</diffuse>
+      <specular>.38 .35 .30 1</specular>
+      <cast_shadows>false</cast_shadows>
+      <visualize>false</visualize>
+      <attenuation>
+        <range>13</range>
+        <constant>.65</constant>
+        <linear>.06</linear>
+        <quadratic>.045</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>.65</inner_angle>
+        <outer_angle>1.15</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+    </light>
+    <light type="spot" name="ceiling_light_3">
+      <pose>2.0 12.9 3.48 0 0 0</pose>
+      <direction>0 0 -1</direction>
+      <diffuse>1.0 .95 .86 1</diffuse>
+      <specular>.38 .35 .30 1</specular>
+      <cast_shadows>false</cast_shadows>
+      <visualize>false</visualize>
+      <attenuation>
+        <range>13</range>
+        <constant>.65</constant>
+        <linear>.06</linear>
+        <quadratic>.045</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>.65</inner_angle>
+        <outer_angle>1.15</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+    </light>
+    <light type="spot" name="ceiling_light_4">
+      <pose>13.8 12.9 3.48 0 0 0</pose>
+      <direction>0 0 -1</direction>
+      <diffuse>1.0 .95 .86 1</diffuse>
+      <specular>.38 .35 .30 1</specular>
+      <cast_shadows>false</cast_shadows>
+      <visualize>false</visualize>
+      <attenuation>
+        <range>13</range>
+        <constant>.65</constant>
+        <linear>.06</linear>
+        <quadratic>.045</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>.65</inner_angle>
+        <outer_angle>1.15</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+    </light>
+    <model name="cargo_tray_HOME_1">
+      <static>true</static>
+      <pose>1.0 0.25 0.443 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_HOME_1_0">
+      <static>true</static>
+      <pose>0.7949999999999999 0.25 0.447 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_HOME_1_1">
+      <static>true</static>
+      <pose>0.925 0.25 0.447 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_HOME_2">
+      <static>true</static>
+      <pose>2.6 0.25 0.443 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_HOME_2_0">
+      <static>true</static>
+      <pose>2.395 0.25 0.447 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_HOME_2_1">
+      <static>true</static>
+      <pose>2.525 0.25 0.447 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_STORES">
+      <static>true</static>
+      <pose>2.7 10.41 0.944 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_STORES_0">
+      <static>true</static>
+      <pose>2.495 10.41 0.948 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_STORES_1">
+      <static>true</static>
+      <pose>2.625 10.41 0.948 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_TOOL_CRIB">
+      <static>true</static>
+      <pose>0.46 5.3 1.504 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_TOOL_CRIB_0">
+      <static>true</static>
+      <pose>0.255 5.3 1.508 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_TOOL_CRIB_1">
+      <static>true</static>
+      <pose>0.385 5.3 1.508 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_QC_LAB">
+      <static>true</static>
+      <pose>7.1 12.72 0.964 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_QC_LAB_0">
+      <static>true</static>
+      <pose>6.895 12.72 0.968 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_QC_LAB_1">
+      <static>true</static>
+      <pose>7.025 12.72 0.968 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_ASSEMBLY_A">
+      <static>true</static>
+      <pose>12.5 11.8 1.764 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_ASSEMBLY_A_0">
+      <static>true</static>
+      <pose>12.295 11.8 1.768 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_ASSEMBLY_A_1">
+      <static>true</static>
+      <pose>12.424999999999999 11.8 1.768 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_tray_ASSEMBLY_B">
+      <static>true</static>
+      <pose>13.65 3.5 1.764 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/station_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_ASSEMBLY_B_0">
+      <static>true</static>
+      <pose>13.445 3.5 1.768 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_stock_ASSEMBLY_B_1">
+      <static>true</static>
+      <pose>13.575 3.5 1.768 0 0 0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_battery_pack">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_parts_crate">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_screwdriver_set">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_sample_vials">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_component_tray">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_0_toolbox">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_battery_pack">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_parts_crate">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_screwdriver_set">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_sample_vials">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_component_tray">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot1_1_toolbox">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_battery_pack">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_parts_crate">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_screwdriver_set">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_sample_vials">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_component_tray">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_0_toolbox">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_battery_pack">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/battery_pack.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_parts_crate">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/parts_crate.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_screwdriver_set">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/screwdriver_set.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_sample_vials">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/sample_vials.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_component_tray">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/component_tray.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="cargo_payload_robot2_1_toolbox">
+      <static>true</static>
+      <pose>22.0 22.0 -1.0 0 0 0.0</pose>
+      <link name="prop">
+        <visual name="cargo">
+          <cast_shadows>true</cast_shadows>
+          <geometry>
+            <mesh>
+              <uri>model://station_cargo/meshes/toolbox.obj</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
   </world>
 </sdf>

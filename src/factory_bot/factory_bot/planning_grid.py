@@ -116,6 +116,19 @@ class PlanningGrid:
             return False
         return allow_restricted or not self.restricted[row, col]
 
+    def restricted_access(self, start, goal):
+        """Allow a restricted bay only for arrival there or departure from it.
+
+        Normal through traffic keeps the bay blocked. Departure must be allowed
+        so a robot finishing an inspection job can return to the main floor.
+        Coordinates are in the map frame.
+        """
+        for x, y in (start, goal):
+            row, col = self.world_to_cell(x, y)
+            if self.in_bounds(row, col) and self.restricted[row, col]:
+                return True
+        return False
+
     def with_blocked(self, extra):
         """A copy of this grid where the cells in `extra` (bool array, e.g. live obstacles seen by
         the lidar) are also blocked, widened by the robot's radius + margin like walls are.

@@ -1,0 +1,171 @@
+# Gazebo world coordinates, with compact kinematic visual payloads.
+world: factory
+rate_hz: 20.0
+supply_policy: replenishing_demo
+robots:
+- robot1
+- robot2
+deck_z: 0.179
+deck_slots:
+- - -0.035
+  - -0.05
+- - -0.035
+  - 0.05
+parked:
+- 22.0
+- 22.0
+- -1.0
+- 0.0
+stock_offsets:
+- - -0.065
+  - 0.0
+- - 0.065
+  - 0.0
+receiving_offsets:
+- - -0.06
+  - -0.045
+- - 0.06
+  - -0.045
+- - -0.06
+  - 0.045
+- - 0.06
+  - 0.045
+types:
+  battery_pack:
+    label: 24V battery cartridge
+    mesh: model://station_cargo/meshes/battery_pack.obj
+  parts_crate:
+    label: Small parts crate
+    mesh: model://station_cargo/meshes/parts_crate.obj
+  screwdriver_set:
+    label: Screwdriver set
+    mesh: model://station_cargo/meshes/screwdriver_set.obj
+  sample_vials:
+    label: Capped QC liquid samples
+    mesh: model://station_cargo/meshes/sample_vials.obj
+  component_tray:
+    label: Machined component tray
+    mesh: model://station_cargo/meshes/component_tray.obj
+  toolbox:
+    label: Compact toolbox
+    mesh: model://station_cargo/meshes/toolbox.obj
+stations:
+  HOME_1:
+    type: battery_pack
+    tray_pose:
+    - 1.0
+    - 0.25
+    - 0.443
+    - 0
+    pickup_pose:
+    - 0.86
+    - 0.25
+    - 0.447
+    - 0
+    dropoff_pose:
+    - 1.1400000000000001
+    - 0.25
+    - 0.447
+    - 0
+  HOME_2:
+    type: battery_pack
+    tray_pose:
+    - 2.6
+    - 0.25
+    - 0.443
+    - 0
+    pickup_pose:
+    - 2.46
+    - 0.25
+    - 0.447
+    - 0
+    dropoff_pose:
+    - 2.74
+    - 0.25
+    - 0.447
+    - 0
+  STORES:
+    type: parts_crate
+    tray_pose:
+    - 2.7
+    - 10.41
+    - 0.944
+    - 0
+    pickup_pose:
+    - 2.56
+    - 10.41
+    - 0.948
+    - 0
+    dropoff_pose:
+    - 2.8400000000000003
+    - 10.41
+    - 0.948
+    - 0
+  TOOL_CRIB:
+    type: screwdriver_set
+    tray_pose:
+    - 0.46
+    - 5.3
+    - 1.504
+    - 0
+    pickup_pose:
+    - 0.32
+    - 5.3
+    - 1.508
+    - 0
+    dropoff_pose:
+    - 0.6000000000000001
+    - 5.3
+    - 1.508
+    - 0
+  QC_LAB:
+    type: sample_vials
+    tray_pose:
+    - 7.1
+    - 12.72
+    - 0.964
+    - 0
+    pickup_pose:
+    - 6.96
+    - 12.72
+    - 0.968
+    - 0
+    dropoff_pose:
+    - 7.239999999999999
+    - 12.72
+    - 0.968
+    - 0
+  ASSEMBLY_A:
+    type: component_tray
+    tray_pose:
+    - 12.5
+    - 11.8
+    - 1.764
+    - 0
+    pickup_pose:
+    - 12.36
+    - 11.8
+    - 1.768
+    - 0
+    dropoff_pose:
+    - 12.64
+    - 11.8
+    - 1.768
+    - 0
+  ASSEMBLY_B:
+    type: toolbox
+    tray_pose:
+    - 13.65
+    - 3.5
+    - 1.764
+    - 0
+    pickup_pose:
+    - 13.51
+    - 3.5
+    - 1.768
+    - 0
+    dropoff_pose:
+    - 13.790000000000001
+    - 3.5
+    - 1.768
+    - 0

@@ -5,6 +5,13 @@ from setuptools import setup
 package_name = "factory_bot"
 
 
+def model_data():
+    """Install meshes, material definitions and textures with their relative paths."""
+    return [("share/" + package_name + "/" + folder,
+             [os.path.join(folder, name) for name in names])
+            for folder, _, names in os.walk("models") if names]
+
+
 def files(pattern):
     """All files (not folders) matching a pattern, e.g. 'config/*.yaml'."""
     return [f for f in glob(pattern) if os.path.isfile(f)]
@@ -24,17 +31,17 @@ setup(
         ("share/" + package_name + "/worlds", files("worlds/*")),
         ("share/" + package_name + "/maps", files("maps/*")),
         ("share/" + package_name + "/rviz", files("rviz/*")),
-    ],
+    ] + model_data(),
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="ros",
     maintainer_email="ros@todo.todo",
     description="Two-robot factory material delivery fleet",
     license="MIT",
-    tests_require=["pytest"],
     entry_points={
         "console_scripts": [
             "obstacle_mover = factory_bot.obstacle_mover:main",
+            "cargo_manager = factory_bot.cargo_manager:main",
             "mapping_driver = factory_bot.mapping_driver:main",
             "map_viewer = factory_bot.map_viewer:main",
             "ogm_mapper = factory_bot.ogm_mapper:main",
@@ -51,6 +58,9 @@ setup(
             "fleet_manager = factory_bot.fleet_manager:main",
             "send_job = factory_bot.send_job:main",
             "call_emergency = factory_bot.call_emergency:main",
+            "traffic_manager = factory_bot.traffic_manager:main",
+            "traffic_test = factory_bot.traffic_test:main",
+            "dashboard = factory_bot.dashboard:main",
         ],
     },
 )

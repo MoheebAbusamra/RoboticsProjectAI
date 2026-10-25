@@ -1,9 +1,10 @@
-# Step 15: localization + navigators (navigation.launch.py) + the fleet manager.
+# Step 15-17: localization + navigators (navigation.launch.py) + the fleet manager + the traffic manager.
 # Start the simulation first (fleet_sim.launch.py), then:
 #   ros2 launch factory_bot fleet.launch.py
 #   ros2 launch factory_bot fleet.launch.py allocation:=optimal algorithm:=dijkstra controller:=pid
+#   ros2 launch factory_bot fleet.launch.py traffic:=false        (no traffic rules - for comparison)
 # Send jobs:  ros2 run factory_bot send_job --demo
-#
+# AI-assisted (Claude): cite in report.
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -25,7 +26,11 @@ def launch_setup(context, *args, **kwargs):
     manager = Node(package="factory_bot", executable="fleet_manager", name="fleet_manager", output="screen",
                    parameters=[{"use_sim_time": True, "robots": robots, "allocation": get("allocation"),
                                 "algorithm": get("algorithm")}])
-    return [nav, manager]
+    actions = [nav, manager]
+    if get("traffic").lower() in ("true", "1", "yes"):
+        actions.append(Node(package="factory_bot", executable="traffic_manager", name="traffic_manager",
+                            output="screen", parameters=[{"use_sim_time": True, "robots": robots}]))
+    return actions
 
 
 def generate_launch_description():
@@ -34,5 +39,6 @@ def generate_launch_description():
         DeclareLaunchArgument("controller", default_value="pure_pursuit", description="pid or pure_pursuit"),
         DeclareLaunchArgument("algorithm", default_value="astar", description="astar, dijkstra or bfs"),
         DeclareLaunchArgument("allocation", default_value="greedy", description="greedy or optimal"),
+        DeclareLaunchArgument("traffic", default_value="true", description="traffic rules on/off"),
         OpaqueFunction(function=launch_setup),
     ])

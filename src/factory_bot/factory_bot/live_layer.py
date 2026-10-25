@@ -25,13 +25,14 @@ class LiveLayer:
         # cells within wall_margin of a mapped wall: points there are the wall itself
         self.near_wall = inflate(grid.occupied | grid.unknown, wall_margin / grid.res + 1e-6)
 
-    def update(self, pose, ranges, angle_min, angle_increment, range_min, range_max, now):
+    def update(self, pose, ranges, angle_min, angle_increment, range_min, range_max, now, laser_x=None):
         """Add one scan taken at robot pose (x, y, yaw) on the map. Returns how many cells were stamped."""
         r = np.asarray(ranges, dtype=float)
         angles = pose[2] + angle_min + angle_increment * np.arange(len(r))
         ok = np.isfinite(r) & (r > range_min) & (r < min(range_max, self.max_range))
-        sx = pose[0] + self.laser_x * math.cos(pose[2])
-        sy = pose[1] + self.laser_x * math.sin(pose[2])
+        offset = self.laser_x if laser_x is None else laser_x
+        sx = pose[0] + offset * math.cos(pose[2])
+        sy = pose[1] + offset * math.sin(pose[2])
         xs, ys = sx + r[ok] * np.cos(angles[ok]), sy + r[ok] * np.sin(angles[ok])
         g = self.grid
         cols = np.floor((xs - g.origin[0]) / g.res).astype(int)
@@ -45,6 +46,29 @@ class LiveLayer:
     def mask(self, now):
         """Cells seen recently enough to count as obstacles."""
         return self.last_seen >= now - self.memory_s
+
+    def front_unmapped_distance(self, pose, ranges, angle_min, angle_increment,
+                                range_min, range_max, half_angle_deg=20.0, max_distance=0.8, laser_x=None):
+        """Nearest current front return not explained by the saved map.
+
+        Uses this scan, rather than remembered points, to check whether the way
+        has cleared. 'Dynamic' here means unmapped, not a recognized object type.
+        """
+        r = np.asarray(ranges, dtype=float)
+        angles = angle_min + angle_increment * np.arange(len(r))
+        angles = np.arctan2(np.sin(angles), np.cos(angles))
+        valid = (np.isfinite(r) & (r > range_min) & (r < range_max)
+                 & (r <= max_distance) & (np.abs(angles) <= math.radians(half_angle_deg)))
+        r, angles = r[valid], angles[valid] + pose[2]
+        offset = self.laser_x if laser_x is None else laser_x
+        sx = pose[0] + offset * math.cos(pose[2])
+        sy = pose[1] + offset * math.sin(pose[2])
+        cols = np.floor((sx + r * np.cos(angles) - self.grid.origin[0]) / self.grid.res).astype(int)
+        rows = np.floor((sy + r * np.sin(angles) - self.grid.origin[1]) / self.grid.res).astype(int)
+        inside = ((rows >= 0) & (rows < self.grid.height) & (cols >= 0) & (cols < self.grid.width))
+        r, rows, cols = r[inside], rows[inside], cols[inside]
+        unmapped = ~self.near_wall[rows, cols]
+        return float(r[unmapped].min()) if unmapped.any() else math.inf
 
     def overlay(self, now):
         """The planning grid with the live obstacles added (inflated like walls)."""

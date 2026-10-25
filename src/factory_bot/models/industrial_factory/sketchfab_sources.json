@@ -1,0 +1,121 @@
+﻿[
+    {
+        "uid":  "49d48cba02734292a128409dee522abf",
+        "name":  "[Riveria opettaa] Low Poly Machine Workshop",
+        "url":  "https://sketchfab.com/3d-models/riveria-opettaa-low-poly-machine-workshop-49d48cba02734292a128409dee522abf",
+        "author":  "Jorma Rysky",
+        "authorUrl":  "https://sketchfab.com/Rysky",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  7162,
+        "downloadable":  true
+    },
+    {
+        "uid":  "779947e2cfae405b9bfa0af6f7b0d070",
+        "name":  "MACHINARY LATHE LOW POLY",
+        "url":  "https://sketchfab.com/3d-models/machinary-lathe-low-poly-779947e2cfae405b9bfa0af6f7b0d070",
+        "author":  "THEAPPXR",
+        "authorUrl":  "https://sketchfab.com/oobexr",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  11968,
+        "downloadable":  true
+    },
+    {
+        "uid":  "fe72a89566b04b45b79d3e9297a6a5cf",
+        "name":  "Low-Poly Conveyor for SCADA \u0026 HMI",
+        "url":  "https://sketchfab.com/3d-models/low-poly-conveyor-for-scada-hmi-fe72a89566b04b45b79d3e9297a6a5cf",
+        "author":  "bucbucket",
+        "authorUrl":  "https://sketchfab.com/bucbucket",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  2328,
+        "downloadable":  true
+    },
+    {
+        "uid":  "854bdf0773b24a36a329d7abaee36517",
+        "name":  "Warehouse Racking / Shelving - Low Poly",
+        "url":  "https://sketchfab.com/3d-models/warehouse-racking-shelving-low-poly-854bdf0773b24a36a329d7abaee36517",
+        "author":  "RembotGames",
+        "authorUrl":  "https://sketchfab.com/RembotGames",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  72,
+        "downloadable":  true
+    },
+    {
+        "uid":  "01c0b5991ad448ed917845df202867c2",
+        "name":  "Workbench Low-poly",
+        "url":  "https://sketchfab.com/3d-models/workbench-low-poly-01c0b5991ad448ed917845df202867c2",
+        "author":  "MaX3Dd",
+        "authorUrl":  "https://sketchfab.com/MaX3Dd",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  1708,
+        "downloadable":  true
+    },
+    {
+        "uid":  "47a45db714d34f2dbcd1d1246e98c000",
+        "name":  "Low Poly Industrial Pack",
+        "url":  "https://sketchfab.com/3d-models/low-poly-industrial-pack-47a45db714d34f2dbcd1d1246e98c000",
+        "author":  "vmatthew",
+        "authorUrl":  "https://sketchfab.com/vmatthew",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  9602,
+        "downloadable":  true
+    },
+    {
+        "uid":  "3baed9ac58184563812f896612a45dc0",
+        "name":  "CNC Control Panel",
+        "url":  "https://sketchfab.com/3d-models/cnc-control-panel-3baed9ac58184563812f896612a45dc0",
+        "author":  "Vinny Passmore",
+        "authorUrl":  "https://sketchfab.com/HPrendering",
+        "license":  {
+                        "uri":  "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+                        "label":  "CC Attribution",
+                        "fullName":  "Creative Commons Attribution",
+                        "requirements":  "Author must be credited. Commercial use is allowed.",
+                        "url":  "http://creativecommons.org/licenses/by/4.0/",
+                        "slug":  "by"
+                    },
+        "faces":  2844,
+        "downloadable":  true
+    }
+]
