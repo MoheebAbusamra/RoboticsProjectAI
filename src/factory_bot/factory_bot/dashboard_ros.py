@@ -7,6 +7,7 @@ import threading
 import time
 
 from factory_bot.dashboard_state import ROBOT_NAMES, delivery_request
+from factory_bot.dashboard_navigation import NavigationSettingsClient, TARGETS
 
 
 class RosBridge(threading.Thread):
@@ -37,6 +38,7 @@ class RosBridge(threading.Thread):
         from rclpy.context import Context
         from rclpy.executors import SingleThreadedExecutor
         from rclpy.parameter import Parameter
+        from rclpy.parameter_client import AsyncParameterClient
         from rclpy.signals import SignalHandlerOptions
         from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, qos_profile_sensor_data
         from nav_msgs.msg import Path as RosPath, Odometry
@@ -55,6 +57,9 @@ class RosBridge(threading.Thread):
             executor.add_node(node)
             publishers = {kind: node.create_publisher(String, topic, 10) for kind, topic in
                           [('delivery', '/delivery_request'), ('emergency', '/emergency_call')]}
+            navigation = NavigationSettingsClient(self.state,
+                {name: AsyncParameterClient(node, name) for name in TARGETS},
+                lambda name, value: Parameter(name, value=value))
 
             def json_message(topic, msg):
                 try:
@@ -86,6 +91,9 @@ class RosBridge(threading.Thread):
                     self.state.update(t, {'nearest': min(valid) if valid else None,
                                           'beams': len(msg.ranges), 'max_range': msg.range_max})
                 node.create_subscription(LaserScan, t, scan, qos_profile_sensor_data)
+                rear=f'/{robot}/rear_obstacle_scan'
+                node.create_subscription(LaserScan,rear,lambda m,t=rear,cb=scan:cb(m,t),
+                                         qos_profile_sensor_data)
             node.create_subscription(Clock, '/clock', lambda m: self.state.clock(
                 m.clock.sec+m.clock.nanosec*1e-9), qos_profile_sensor_data)
 
@@ -100,6 +108,7 @@ class RosBridge(threading.Thread):
             previous_cpu = None
             camera_sub, camera_robot = None, None
             while context.ok() and not self.stop_event.is_set():
+                navigation.tick()
                 with self.state.lock:
                     desired = self.state.active_camera
                 if desired != camera_robot:
@@ -125,6 +134,9 @@ class RosBridge(threading.Thread):
                             raise ValueError('Fleet telemetry is offline or stale; request was not sent.')
                         if now-submitted > 5.:
                             raise ValueError('Request expired before it could be sent.')
+                        if kind == 'navigation_settings':
+                            navigation.apply(payload)
+                            continue
                         if kind == 'delivery':
                             payload = delivery_request(payload['pickup'], payload['dropoff'], payload['priority'], self.stations)
                         elif kind == 'emergency':

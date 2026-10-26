@@ -144,6 +144,19 @@
     <origin xyz="0.205 0 0.010"/>
   </joint>
 
+  <!-- Low rear safety lidar, outside our shell. It is not an ICP/SLAM input. -->
+  <link name="rear_obstacle_laser_link">
+    <visual>
+      <origin xyz="-0.015 0 0"/>
+      <geometry><box size="0.018 0.045 0.018"/></geometry>
+      <material name="safety_lidar_graphite"/>
+    </visual>
+  </link>
+  <joint name="rear_obstacle_laser_joint" type="fixed">
+    <parent link="base_link"/><child link="rear_obstacle_laser_link"/>
+    <origin xyz="-0.205 0 0.010" rpy="0 0 3.141592653589793"/>
+  </joint>
+
   <link name="imu_link">
     <inertial>
       <mass value="0.05"/>

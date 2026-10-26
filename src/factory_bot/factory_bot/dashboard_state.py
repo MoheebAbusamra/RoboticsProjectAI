@@ -94,8 +94,9 @@ class DashboardState:
                         if rec.get('rule'): text += ' · '+rec['rule']
                         self.event('traffic', text, now)
             elif topic.endswith('/nav_status') and previous and value.get('state') != previous.get('state'):
-                if value.get('state') in ('FAILED', 'BLOCKED', 'ARRIVED'):
-                    self.event('warning' if value['state'] != 'ARRIVED' else 'success',
+                if value.get('state') in ('FAILED', 'BLOCKED', 'ARRIVED', 'RECOVERING'):
+                    kind='recovery' if value['state']=='RECOVERING' else 'success' if value['state']=='ARRIVED' else 'warning'
+                    self.event(kind,
                                topic.split('/')[1].upper()+' · '+value['state'], now)
 
     def clock(self, sim, now=None):

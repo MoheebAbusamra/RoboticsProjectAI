@@ -69,6 +69,7 @@ def launch_setup(context, *args, **kwargs):
     for name in robots:
         bridge_args += [f"/{name}/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
                         f"/{name}/obstacle_scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+                        f"/{name}/rear_obstacle_scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
                         f"/{name}/imu@sensor_msgs/msg/Imu[gz.msgs.IMU",
                         f"/{name}/ground_truth@nav_msgs/msg/Odometry[gz.msgs.Odometry"]  # NEW (8)
     bridge = Node(package="ros_gz_bridge", executable="parameter_bridge", output="screen",

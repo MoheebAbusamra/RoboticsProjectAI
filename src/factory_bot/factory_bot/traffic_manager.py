@@ -37,6 +37,7 @@ class TrafficManager(Node):
         self.declare_parameter("release_s", 1.0)         # way clear this long before a waiting robot goes
         self.declare_parameter("blocked_s", 2.0)         # blocked this long by a standing robot -> it makes room
         self.declare_parameter("aside_timeout_s", 60.0)  # never keep a robot aside longer than this
+        self.declare_parameter("backup_status_timeout", 0.6)
         self.declare_parameter("results_csv", os.path.expanduser("~/factory_ws/results/traffic.csv"))
         get = lambda n: self.get_parameter(n).value     # noqa: E731
         self.get = get
@@ -47,6 +48,7 @@ class TrafficManager(Node):
                                   get("blocked_s"), get("aside_timeout_s"))
         self.robots = list(get("robots"))
         self.status = {r: None for r in self.robots}
+        self.received = {r: -math.inf for r in self.robots}
         self.path = {r: [] for r in self.robots}
         self.blocked_since = {r: None for r in self.robots}
         self.fleet = {}
@@ -70,6 +72,7 @@ class TrafficManager(Node):
 
     def on_status(self, robot, msg):
         self.status[robot] = json.loads(msg.data)
+        self.received[robot] = self.now()
 
     def on_path(self, robot, msg):
         self.path[robot] = [(p.pose.position.x, p.pose.position.y) for p in msg.poses]
@@ -86,11 +89,15 @@ class TrafficManager(Node):
         else:
             self.blocked_since[robot] = None
         active = nav in MOVING
+        recovery=st.get('recovery') if nav=='RECOVERING' else None
+        route=(recovery.get('path') if recovery else self.path[robot]) or []
         f = self.fleet.get(robot, {})
         return RobotView(robot, tuple(pose) if pose else None, active,
-                         remaining_route(self.path[robot], pose) if active else [],
+                         remaining_route(route, pose) if active else [],
                          f.get("state") or "IDLE", f.get("priority"),
-                         now - self.blocked_since[robot] if self.blocked_since[robot] else 0.0)
+                         now - self.blocked_since[robot] if self.blocked_since[robot] else 0.0,
+                         recovery,0<=now-self.received[robot]<=self.get('backup_status_timeout'),
+                         st.get('stopped',False),st.get('traffic_hold'))
 
     def tick(self):
         now = self.now()
@@ -106,9 +113,11 @@ class TrafficManager(Node):
             if (c["cmd"], c["because"]) != (prev["cmd"], prev.get("because")):
                 self.report(r, prev, c, views, now, apart)
             msg = {k: c[k] for k in ("cmd", "because", "rule")}
+            msg.update({k:c[k] for k in ('backup_granted','backup_id','backup_hold') if k in c})
             if c["spot"] is not None:
                 msg["spot"] = [round(c["spot"][0], 2), round(c["spot"][1], 2)]
-            if msg != self.sent.get(r) or now - self.last_send.get(r, 0.0) >= 1.0:
+            repeat=.25 if any(k in c for k in ('backup_id','backup_hold')) else 1.0
+            if msg != self.sent.get(r) or now - self.last_send.get(r, 0.0) >= repeat:
                 self.pub[r].publish(String(data=json.dumps(msg)))
                 self.sent[r], self.last_send[r] = msg, now
 
@@ -123,7 +132,8 @@ class TrafficManager(Node):
         if cmd["cmd"] == "wait":
             self.totals[robot]["waits"] += 1
             other = cmd["because"]
-            why = (f"priority {priority(views[other])} vs {priority(views[robot])}" if cmd["rule"] == "give way"
+            why = (cmd['rule'] if cmd['rule'].startswith('backup') else
+                   f"priority {priority(views[other])} vs {priority(views[robot])}" if cmd["rule"] == "give way"
                    else f"{other} is {views[other].fleet_state.lower()} there")
             self.get_logger().warn(f"{robot} WAITS for {other} - {cmd['rule']} ({why})")
             self.save(now, robot, "wait", other, cmd["rule"], None, apart, None)
@@ -148,7 +158,8 @@ class TrafficManager(Node):
 
     def publish_state(self):
         out = {"robots": {r: {"cmd": c["cmd"], "because": c["because"], "rule": c["rule"],
-                              "spot": c["spot"], **self.totals[r]} for r, c in self.rules.cmd.items()},
+                              "spot": c["spot"],**{k:c[k] for k in ('backup_granted','backup_id','backup_hold') if k in c},
+                              **self.totals[r]} for r, c in self.rules.cmd.items()},
                "closest_m": round(self.closest_m, 2) if math.isfinite(self.closest_m) else None}
         self.state_pub.publish(String(data=json.dumps(out)))
 

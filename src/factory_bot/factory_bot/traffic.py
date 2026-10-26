@@ -31,9 +31,10 @@ import numpy as np
 
 from factory_bot.planning_grid import inflate
 from factory_bot.planners import neighbours
+from factory_bot.backup_recovery import peer_blocks_reverse
 
 JOB_POINTS = {"emergency": 30, "urgent": 20, "routine": 10}
-MOVING = ("DRIVING", "BLOCKED", "ALIGNING")          # navigator states that mean "following a route"
+MOVING = ("DRIVING", "BLOCKED", "ALIGNING", "RECOVERING")
 BUSY_HERE = ("LOADING", "UNLOADING")                  # fleet states that mean "can't leave right now"
 
 
@@ -47,6 +48,10 @@ class RobotView:
     fleet_state: str = "IDLE"       # IDLE, TO_PICKUP, LOADING, TO_DROPOFF, UNLOADING, RETURNING
     job_priority: str = None        # emergency / urgent / routine / None
     blocked_s: float = 0.0          # how long the navigator has been BLOCKED (stopped by an obstacle)
+    recovery: dict = None
+    fresh: bool = True
+    stopped: bool = False
+    traffic_hold: str = None
 
     @property
     def xy(self):
@@ -174,6 +179,49 @@ class TrafficRules:
         self.progress = {}            # robot -> (goal, nearest it has been to it, when)
         self.cmd = {}                 # robot -> {"cmd": go/wait/aside, "because", "rule", "spot", "since"}
         self.clear_since = {}         # robot -> time its wait condition first looked clear
+        self.backup_owner = None      # (robot, unique request id); never preempt a backing robot
+
+    def _backup_commands(self, views, now):
+        requests={n:v for n,v in views.items() if v.recovery and
+                  v.recovery.get('phase') in ('waiting','backing')}
+        if self.backup_owner:
+            name,identifier=self.backup_owner;current=views.get(name)
+            # A stale owner must explicitly return before another robot gets a lease.
+            if current is not None and current.fresh and (name not in requests or
+                    current.recovery.get('id')!=identifier):self.backup_owner=None
+        if not self.backup_owner and not requests:return None
+        if not self.backup_owner:
+            backing={n:v for n,v in requests.items() if v.recovery.get('phase')=='backing'}
+            candidates=backing or requests
+            name=right_of_way_order(candidates)[0]
+            self.backup_owner=(name,candidates[name].recovery.get('id'))
+        name,identifier=self.backup_owner;owner=views.get(name)
+        token=f'{name}:{identifier}';new={}
+        data=owner.recovery if owner and owner.recovery else {}
+        path=data.get('path') or []
+        valid=(owner is not None and owner.pose is not None and owner.fresh and
+               data.get('id')==identifier and name in requests and len(path)>=2 and
+               all(len(p)==2 and all(math.isfinite(x) for x in p) for p in path))
+        remaining=math.dist(owner.xy,path[-1]) if valid else math.inf
+        valid=valid and remaining<=.55
+        granted=valid and all(v.fresh and v.pose is not None for v in views.values())
+        if data.get('phase')!='backing':granted=granted and bool(owner and owner.stopped)
+        for peer,v in views.items():
+            if peer==name:continue
+            conflict=(not valid or v.pose is None or peer in requests or
+                closest(path,ahead(v.route,v.xy,self.lookahead_m))<self.clearance_m)
+            if conflict:
+                c=self._make(peer,'wait',name,'backup recovery',now);c['backup_hold']=token
+                new[peer]=c
+                granted=granted and v.fresh and v.stopped and v.traffic_hold==token
+            else:new[peer]=self._make(peer,'go',None,None,now)
+            if valid and v.pose is not None and peer_blocks_reverse(owner.pose,remaining,v.xy):
+                granted=False
+        command=self._make(name,'go' if granted else 'wait',None if granted else name,
+                           'backup recovery' if granted else 'backup awaiting clearance',now)
+        command.update(backup_granted=bool(granted),backup_id=identifier)
+        new[name]=command
+        return new
 
     def _make(self, robot, cmd, because, rule, now, spot=None):
         old = self.cmd.get(robot, {})
@@ -229,6 +277,10 @@ class TrafficRules:
 
     def update(self, views, now):
         """views: {name: RobotView}. -> {name: command dict} for every robot."""
+        recovering=self._backup_commands(views,now)
+        if recovering is not None:
+            self.cmd=recovering
+            return recovering
         ready = {n: v for n, v in views.items() if v.pose is not None}
         new = {}
         stuck = {n: self._stuck(v, now) for n, v in ready.items()}

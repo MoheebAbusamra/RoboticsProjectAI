@@ -134,6 +134,9 @@ def navigator_harness(now=3.1):
             self.front_min=self.front_dynamic_min=.60;self.front_scan_at=now
             self.normal_obstacle=NormalObstaclePolicy();self.normal_obstacle.rerouted(True,3.)
             self.motion_progress=MotionProgress();self.last_command=(0.,0.)
+            from factory_bot.backup_recovery import BackupRecovery
+            self.backup=BackupRecovery();self.odom_at=-math.inf
+            self.odom_pose=None
             self.detour_active=False;self.commands=[]
             self.follower=SimpleNamespace(step=lambda *a,**kw:(.25,.40,False))
 
@@ -142,6 +145,7 @@ def navigator_harness(now=3.1):
                     'normal_obstacle_wait':3.,'stop_distance':.35}[name]
 
         def now(self):return self.time
+        blocked_expired=Navigator.blocked_expired
         def pose(self):return (2.,3.,0.)
         def traffic_wait(self):return False
         def speed_limit(self,pose):return None

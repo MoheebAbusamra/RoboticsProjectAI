@@ -31,6 +31,7 @@ AI-assisted (Claude): cite in report."""
 import json
 import math
 import os
+import uuid
 
 import numpy as np
 import rclpy
@@ -49,6 +50,7 @@ from factory_bot.controllers import make_follower, wrap
 from factory_bot.live_layer import LiveLayer
 from factory_bot.normal_obstacle_policy import NormalObstaclePolicy
 from factory_bot.motion_progress import MotionProgress
+from factory_bot.backup_recovery import BackupRecovery, rear_scan_clear, rear_map_clear
 from factory_bot.planners import path_to_world, plan
 from factory_bot.planning_grid import PlanningGrid
 from factory_bot.track_sim import cross_track
@@ -76,6 +78,13 @@ class Navigator(Node):
         self.declare_parameter("scan_timeout", 0.6)            # both scan streams must stay fresh
         self.declare_parameter("motion_stall_s", 3.0)          # commanded motion without pose progress
         self.declare_parameter("blocked_timeout", 30.0)       # s blocked with no way round -> give up
+        self.declare_parameter("backup_reroutes", 3)
+        self.declare_parameter("backup_progress_m", 0.05)
+        self.declare_parameter("backup_distance", 0.30)
+        self.declare_parameter("backup_speed", 0.05)
+        self.declare_parameter("backup_timeout", 8.0)
+        self.declare_parameter("backup_wait_timeout", 10.0)
+        self.declare_parameter("backup_traffic_lease", 0.75)
         self.declare_parameter("live_memory_s", 2.0)          # s a live obstacle is remembered
         self.declare_parameter("live_range", 3.0)             # m: lidar points further away are ignored
         self.declare_parameter("check_ahead_m", 2.5)          # m of route checked for live obstacles
@@ -112,6 +121,13 @@ class Navigator(Node):
         self.detour_active = False
         self.last_command = (0.0, 0.0)
         self.motion_progress = MotionProgress(get("motion_stall_s"), get("blocked_timeout"))
+        self.backup = BackupRecovery(get("backup_reroutes"),get("backup_progress_m"),
+            get("backup_distance"),get("backup_speed"),get("backup_timeout"),
+            get("backup_wait_timeout"),get("blocked_timeout"))
+        self.rear_scan = None
+        self.rear_scan_at = self.odom_at = self.traffic_at = self.pose_at = -math.inf
+        self.odom_pose = None
+        self.odom_velocity = (math.inf,math.inf)
         self.truth = None                         # true (x, y, yaw) on the map, for metrics only
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -120,6 +136,9 @@ class Navigator(Node):
         self.create_subscription(LaserScan, f"/{r}/scan", self.on_scan, qos_profile_sensor_data)
         self.create_subscription(LaserScan, f"/{r}/obstacle_scan", self.on_obstacle_scan,
                                  qos_profile_sensor_data)
+        self.create_subscription(LaserScan, f"/{r}/rear_obstacle_scan", self.on_rear_scan,
+                                 qos_profile_sensor_data)
+        self.create_subscription(Odometry, f"/{r}/odom", self.on_odom, qos_profile_sensor_data)
         self.create_subscription(Odometry, f"/{r}/ground_truth", self.on_truth, 20)
         self.loc_ok = True                        # False while ICP says it is lost
         self.create_subscription(Bool, f"/{r}/localization_ok", lambda m: setattr(self, "loc_ok", m.data), 10)
@@ -140,6 +159,24 @@ class Navigator(Node):
 
     def on_obstacle_scan(self, msg):
         self.record_scan(msg, "safety", self.get("obstacle_laser_x"))
+
+    def on_rear_scan(self, msg):
+        now=self.now()
+        self.rear_scan=msg
+        self.rear_scan_at=min(now,msg.header.stamp.sec+msg.header.stamp.nanosec*1e-9)
+        pose=self.pose()
+        if (pose is not None and msg.header.frame_id.lstrip('/')==f'{self.robot}/rear_obstacle_laser_link'
+            and 0<=now-self.rear_scan_at<=self.get('scan_timeout')
+            and 0<=now-self.pose_at<=self.get('scan_timeout')
+            and math.isfinite(msg.angle_min) and math.isfinite(msg.angle_increment)):
+            self.live.update(pose,msg.ranges,msg.angle_min+math.pi,msg.angle_increment,
+                             msg.range_min,msg.range_max,now,laser_x=-.205)
+
+    def on_odom(self, msg):
+        p=msg.pose.pose.position
+        self.odom_pose=(p.x,p.y,yaw_of(msg.pose.pose.orientation))
+        self.odom_velocity=(msg.twist.twist.linear.x,msg.twist.twist.angular.z)
+        self.odom_at=min(self.now(),msg.header.stamp.sec+msg.header.stamp.nanosec*1e-9)
 
     def record_scan(self, msg, source, laser_x):
         """Combine the original map-plane scan with the low front body-height scan."""
@@ -165,13 +202,15 @@ class Navigator(Node):
     def on_truth(self, msg):
         p, o = msg.pose.pose.position, self.get("map_origin_in_gazebo")
         self.truth = (p.x - o[0], p.y - o[1], yaw_of(msg.pose.pose.orientation))
-        if self.state in ("DRIVING", "BLOCKED", "ALIGNING") and self.goal:
+        if self.state in ("DRIVING", "BLOCKED", "ALIGNING", "RECOVERING") and self.goal:
             self.goal["truth_track"].append(self.truth)
 
     def pose(self):
         """Where the robot thinks it is: TF map -> robotN/base_footprint, or None."""
         try:
-            t = self.tf_buffer.lookup_transform("map", f"{self.robot}/base_footprint", Time()).transform
+            stamped = self.tf_buffer.lookup_transform("map", f"{self.robot}/base_footprint", Time())
+            self.pose_at=min(self.now(),stamped.header.stamp.sec+stamped.header.stamp.nanosec*1e-9)
+            t=stamped.transform
         except TransformException:
             return None
         return (t.translation.x, t.translation.y, yaw_of(t.rotation))
@@ -220,6 +259,8 @@ class Navigator(Node):
         if pose is None:
             self.get_logger().warn(f"{self.robot}: no pose yet (is localization running?) - goal ignored")
             return
+        if self.backup.active:self.stop()
+        self.backup.reset()
         goal["allow"] = self.grid.restricted_access(pose[:2], (goal["x"], goal["y"]))
         result = plan(self.live.overlay(self.now()), pose[:2], (goal["x"], goal["y"]), goal["algorithm"],
                       allow_restricted=goal["allow"])
@@ -264,6 +305,10 @@ class Navigator(Node):
         t = json.loads(msg.data)
         cmd, old = t.get("cmd", "go"), self.traffic.get("cmd", "go")
         self.traffic, self.traffic_until = t, self.now() + 3.0
+        self.traffic_at = self.now()
+        if self.backup.active:
+            if cmd!="go":self.stop()
+            return  # an ASIDE request cannot replace a reserved reverse maneuver
         if cmd == "aside" and self.aside is None:
             self.step_aside(t["spot"], t.get("because", "?"))
         elif cmd != "aside" and self.aside is not None:
@@ -306,6 +351,70 @@ class Navigator(Node):
         """Normal and emergency navigation share the policy; traffic ASIDE moves stay separate."""
         return self.aside is None
 
+    def blocked_expired(self, now):
+        if self.backup.deadline is not None:return self.backup.expired(now)
+        since=self.goal.get("blocked_since")
+        return since is not None and now-since>self.get("blocked_timeout")
+
+    def completed_replan(self, pose):
+        """Count attempted reroutes, including failures; plans alone are not progress."""
+        if not self.normal_obstacle_mode():return False
+        decision=self.backup.note_replan(pose,self.odom_pose,self.now(),self.goal.get("blocked_since"))
+        self.get_logger().info(f"{self.robot}: {self.backup.attempts}/{self.backup.limit} reroutes without position progress")
+        if decision=="exhausted":
+            self.finish("FAILED",reason="still blocked after the one permitted backup recovery")
+            return True
+        if decision=="request":
+            self.stop()
+            self.backup.request(pose,self.odom_pose,(self.goal["x"],self.goal["y"]),
+                                self.now(),uuid.uuid4().hex)
+            self.state="RECOVERING"
+            self.goal["all_paths"].append(self.backup.path)
+            self.publish_plan(self.backup.path)
+            self.publish_status()
+            self.get_logger().warn(f"{self.robot}: requesting a {self.backup.distance:.2f} m backup after {self.backup.limit} stationary reroutes")
+            return True
+        return False
+
+    def run_backup(self, pose, now):
+        """The only negative-velocity command path; the normal follower is unchanged."""
+        if pose is None or not self.loc_ok:
+            self.backup.fail("backup stopped: localization unavailable")
+            self.finish("FAILED",reason=self.backup.reason);return
+        fresh=lambda stamp:0<=now-stamp<=self.get("scan_timeout")
+        clear=True;reason=""
+        if not fresh(self.pose_at):clear,reason=False,"localization transform stale"
+        elif not fresh(self.front_scan_at):clear,reason=False,"mapping/front safety scan stale"
+        elif not fresh(self.rear_scan_at) or self.rear_scan is None:clear,reason=False,"rear safety scan stale or unavailable"
+        elif self.rear_scan.header.frame_id.lstrip('/')!=f'{self.robot}/rear_obstacle_laser_link':clear,reason=False,"rear sensor frame mismatch"
+        elif not fresh(self.odom_at) or self.odom_pose is None:clear,reason=False,"odometry stale or unavailable"
+        else:
+            msg=self.rear_scan;remaining=max(0.,self.backup.distance-self.backup.travelled)
+            clear,reason=rear_scan_clear(msg.ranges,msg.angle_min,msg.angle_increment,
+                                        msg.range_min,msg.range_max,remaining,grid=self.grid,pose=pose)
+            if clear:clear,reason=rear_map_clear(self.grid,pose,remaining,self.goal["allow"])
+        granted=(self.traffic.get("cmd")=="go" and self.traffic.get("backup_granted") is True
+                 and self.traffic.get("backup_id")==self.backup.identifier
+                 and 0<=now-self.traffic_at<=self.get("backup_traffic_lease"))
+        if clear and not granted:reason="waiting for fresh traffic permission"
+        action=self.backup.step(pose,self.odom_pose if fresh(self.odom_at) else None,
+                                now,clear,granted,reason)
+        if action=="reverse":self.drive(-self.backup.speed,0.0)
+        else:self.stop()
+        if action=="failed":self.finish("FAILED",reason=self.backup.reason)
+        elif action=="complete":
+            g=self.goal
+            self.normal_obstacle=NormalObstaclePolicy(self.get("normal_obstacle_wait"))
+            self.motion_progress.reset();self.detour_active=False
+            g.update(motion_stalled=False,wait_for_way=True,dynamic_wait=False)
+            if self.replan("backup complete; planning from the new position",count_recovery=False):
+                g["wait_for_way"]=False
+            else:
+                self.state="BLOCKED"
+                if g["blocked_since"] is None:g["blocked_since"]=now
+                self.normal_obstacle.start_wait(now)
+            self.publish_status()
+
     def handle_normal_obstacle(self, now):
         """Hold for three seconds, retry planning, or follow a bounded, guarded detour."""
         self.detour_active = False
@@ -324,7 +433,7 @@ class Navigator(Node):
             self.get_logger().info(f"{self.robot}: obstacle/stall - stopping for "
                                    f"{self.get('normal_obstacle_wait'):.1f} s before checking again")
         self.state = "BLOCKED"
-        if now-g["blocked_since"] > self.get("blocked_timeout"):
+        if self.blocked_expired(now):
             self.finish("FAILED", reason="obstacle did not clear after detour attempts")
             return True
         if decision == "detour":
@@ -343,15 +452,19 @@ class Navigator(Node):
         return True
 
     def loop(self):
-        waiting = self.traffic_wait()
-        if self.state not in ("DRIVING", "BLOCKED", "ALIGNING"):
+        if self.state not in ("DRIVING", "BLOCKED", "ALIGNING", "RECOVERING"):
             return
         pose = self.pose()
+        if self.state=="RECOVERING":
+            self.run_backup(pose,self.now());return
+        waiting = self.traffic_wait()
         if pose is None:
+            self.backup.pause(self.now())
             self.motion_progress.reset()
             self.stop()
             return
         if not self.loc_ok:                       # don't drive on a pose we don't trust
+            self.backup.pause(self.now())
             self.motion_progress.reset()
             self.get_logger().warn(f"{self.robot}: localization lost - stopped until it recovers",
                                    throttle_duration_sec=3.0)
@@ -359,6 +472,7 @@ class Navigator(Node):
             return
         g = self.goal
         if waiting:                               # giving way to the other robot: stand still
+            self.backup.pause(self.now())
             self.motion_progress.reset()
             self.stop()
             g["traffic_wait_s"] += 0.05
@@ -367,11 +481,15 @@ class Navigator(Node):
             return
         now = self.now()
         if now-self.front_scan_at > self.get("scan_timeout"):
+            self.backup.pause(now)
             self.stop()
             self.motion_progress.reset()
             self.get_logger().warn(f"{self.robot}: waiting for fresh mapping and safety scans",
                                    throttle_duration_sec=3.0)
             return
+        self.backup.resume(now)
+        if self.normal_obstacle_mode() and 0<=now-self.odom_at<=self.get("scan_timeout"):
+            self.backup.observe_forward(pose,self.odom_pose,(g["x"],g["y"]),self.last_command[0])
         if self.normal_obstacle_mode():
             progress = self.motion_progress.observe(pose, now, *self.last_command)
             if progress == "failed":
@@ -387,7 +505,7 @@ class Navigator(Node):
         if g.get("wait_for_way"):                 # the way was blocked when the goal came: stay put, retry
             now = self.now()
             self.stop()
-            if now - g["blocked_since"] > self.get("blocked_timeout"):
+            if self.blocked_expired(now):
                 self.finish("FAILED", reason="blocked too long, no way round")
             elif now >= g["retry_at"] and self.replan("waiting for the way to clear"):
                 g["wait_for_way"] = False
@@ -411,7 +529,7 @@ class Navigator(Node):
                     g["blocked_since"] = now
                     g["blocked_count"] += 1
                 self.get_logger().warn(f"{self.robot}: obstacle {self.front_min:.2f} m ahead - waiting")
-            elif now - g["blocked_since"] > self.get("blocked_timeout"):
+            elif self.blocked_expired(now):
                 self.finish("FAILED", reason="blocked too long, no way round")
             elif now - g["blocked_since"] > (self.get("normal_obstacle_wait") if self.normal_obstacle_mode()
                                              else self.get("wait_before_replan")) and now >= g["retry_at"]:
@@ -440,13 +558,14 @@ class Navigator(Node):
             i += 1
         return False
 
-    def replan(self, reason):
+    def replan(self, reason, count_recovery=True):
         """Plan again from where we are, around the live obstacles. True if a new route was found."""
         g, now, pose = self.goal, self.now(), self.pose()
         if pose is None:
             return False
         result = plan(self.live.overlay(now), pose[:2], (g["x"], g["y"]), g["algorithm"], allow_restricted=g["allow"])
         g["replan_ms"] = round(g["replan_ms"] + result.time_ms, 1)
+        if count_recovery and self.completed_replan(pose):return False
         if not result.success:
             g["retry_at"] = now + self.get("retry_period")
             self.get_logger().warn(f"{self.robot}: {reason}, no way round yet - retrying in "
@@ -499,6 +618,7 @@ class Navigator(Node):
     def finish(self, state, reason=""):
         """End of a goal: compute the metrics (ground truth = measuring only) and report."""
         g = self.goal
+        if self.backup.active:self.backup.fail(reason or "goal ended during backup")
         self.state = state
         self.stop()
         g["travel_s"] = round(self.now() - g["start_time"], 1)
@@ -535,6 +655,11 @@ class Navigator(Node):
         out = {"robot": self.robot, "state": self.state,
                "pose": [round(v, 3) for v in pose] if pose else None,
                "traffic": self.traffic.get("cmd", "go"), "aside": self.aside is not None}
+        out["stopped"]=(0<=self.now()-self.odom_at<=self.get("scan_timeout") and
+                        abs(self.odom_velocity[0])<.02 and abs(self.odom_velocity[1])<.08 and
+                        abs(self.last_command[0])<.01 and abs(self.last_command[1])<.05)
+        out["traffic_hold"]=self.traffic.get("backup_hold") if self.traffic.get("cmd")=="wait" else None
+        out["recovery"]=self.backup.status()
         if self.goal:
             keep = ("seq", "name", "algorithm", "controller", "plan_ms", "expanded", "path_m", "travel_s",
                     "driven_m", "goal_error_m", "heading_error_deg", "cross_track_mean_m",
