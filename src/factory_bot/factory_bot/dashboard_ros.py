@@ -7,7 +7,7 @@ import threading
 import time
 
 from factory_bot.dashboard_state import ROBOT_NAMES, delivery_request
-from factory_bot.dashboard_navigation import NavigationSettingsClient, TARGETS
+from factory_bot.dashboard_navigation import NavigationSettingsClient, TARGETS, SETTINGS_TOPIC
 
 
 class RosBridge(threading.Thread):
@@ -41,7 +41,7 @@ class RosBridge(threading.Thread):
         from rclpy.parameter_client import AsyncParameterClient
         from rclpy.signals import SignalHandlerOptions
         from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, qos_profile_sensor_data
-        from nav_msgs.msg import Path as RosPath, Odometry
+        from nav_msgs.msg import Path as RosPath, Odometry, OccupancyGrid
         from sensor_msgs.msg import Image, LaserScan
         from std_msgs.msg import String, Bool
         from rosgraph_msgs.msg import Clock
@@ -56,7 +56,8 @@ class RosBridge(threading.Thread):
             executor = SingleThreadedExecutor(context=context)
             executor.add_node(node)
             publishers = {kind: node.create_publisher(String, topic, 10) for kind, topic in
-                          [('delivery', '/delivery_request'), ('emergency', '/emergency_call')]}
+                          [('delivery', '/delivery_request'), ('emergency', '/emergency_call'),
+                           ('map_activate', '/maps/request')]}
             navigation = NavigationSettingsClient(self.state,
                 {name: AsyncParameterClient(node, name) for name in TARGETS},
                 lambda name, value: Parameter(name, value=value))
@@ -68,11 +69,19 @@ class RosBridge(threading.Thread):
                 except (ValueError, TypeError):
                     self.state.event('warning', 'Invalid JSON on '+topic)
 
-            for topic in ['/fleet/state', '/traffic/state']:
+            for topic in ['/fleet/state', '/traffic/state', '/maps/status']:
                 node.create_subscription(String, topic, lambda m, t=topic: json_message(t, m), 10)
             path_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
                                   reliability=ReliabilityPolicy.RELIABLE)
             image_qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
+            def live_map(msg):
+                if not 0 < len(msg.data) <= 2_000_000 or len(msg.data) != msg.info.width*msg.info.height: return
+                self.state.update('/mapping/live_map', {'width':msg.info.width,'height':msg.info.height,
+                    'resolution':msg.info.resolution,'origin':[msg.info.origin.position.x,msg.info.origin.position.y,0.],
+                    'values':list(msg.data)})
+            node.create_subscription(OccupancyGrid, '/mapping/preview', live_map, path_qos)
+            node.create_subscription(RosPath, '/mapping/preview_path', lambda m:self.state.update(
+                '/mapping/trajectory',[(p.pose.position.x,p.pose.position.y) for p in m.poses]),path_qos)
             for robot in ROBOT_NAMES:
                 t = f'/{robot}/nav_status'
                 node.create_subscription(String, t, lambda m, t=t: json_message(t, m), 10)
@@ -128,12 +137,33 @@ class RosBridge(threading.Thread):
                     try: kind, payload, submitted = self.commands.get_nowait()
                     except queue.Empty: break
                     try:
+                        if kind == 'map_activate':
+                            with self.state.lock:
+                                maps=self.state.values.get('/maps/status',{})
+                                stamp=self.state.seen.get('/maps/status',-math.inf)
+                                settings_busy=self.state.values.get(SETTINGS_TOPIC,{}).get('applying')
+                            if settings_busy:raise ValueError('Wait for navigation defaults to finish applying.')
+                            action=payload.get('action')
+                            allowed=True if action=='mapping_visualize' else maps.get('can_generate') if action=='generate' else (
+                                maps.get('mapping',{}).get('busy') if action in ('finish_mapping','cancel_mapping') else maps.get('can_activate'))
+                            if now-stamp>2.5 or not allowed:
+                                raise ValueError(maps.get('generation_reason') if action=='generate' else 'Wait for a ready map coordinator.')
+                            if now-submitted>5.:raise ValueError('Map request expired before it could be sent.')
+                            if action not in ('activate','restore','generate','finish_mapping','cancel_mapping','mapping_visualize'):
+                                raise ValueError('Invalid map action.')
+                            publishers[kind].publish(String(data=json.dumps(payload)))
+                            self.state.event('map','Map request sent / '+action+' / awaiting acknowledgement')
+                            continue
                         with self.state.lock:
                             stamp = self.state.seen.get('/fleet/state')
+                            held=self.state.values.get('/fleet/state',{}).get('map_paused',False)
+                            maps=self.state.values.get('/maps/status',{})
                         if stamp is None or now-stamp > 3.:
                             raise ValueError('Fleet telemetry is offline or stale; request was not sent.')
                         if now-submitted > 5.:
                             raise ValueError('Request expired before it could be sent.')
+                        if held or maps.get('busy'):
+                            raise ValueError('Map activation holds dispatch and settings until localization is ready.')
                         if kind == 'navigation_settings':
                             navigation.apply(payload)
                             continue

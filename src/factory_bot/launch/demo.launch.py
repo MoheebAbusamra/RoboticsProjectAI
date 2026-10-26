@@ -23,6 +23,8 @@ def generate_launch_description():
         DeclareLaunchArgument("rviz", default_value="false"),
         DeclareLaunchArgument("movers", default_value="true"),
         DeclareLaunchArgument("robots", default_value="robot1,robot2"),
+        DeclareLaunchArgument("map", default_value=os.path.join(share, "maps", "factory_map.yaml"),
+                              description="Saved map YAML shared by all navigation components"),
         DeclareLaunchArgument("controller", default_value="pure_pursuit"),
         DeclareLaunchArgument("algorithm", default_value="astar"),
         DeclareLaunchArgument("allocation", default_value="greedy"),
@@ -39,8 +41,10 @@ def generate_launch_description():
              condition=IfCondition(LaunchConfiguration("dashboard"))),
         TimerAction(period=15.0, actions=[
             include("fleet.launch.py", {
+                "managed_maps": "true",
+                **{
                 name: LaunchConfiguration(name)
-                for name in ("robots", "controller", "algorithm", "allocation", "traffic")}),
+                for name in ("robots", "map", "controller", "algorithm", "allocation", "traffic")}}),
             Node(package="rviz2", executable="rviz2", output="screen",
                  arguments=["-d", os.path.join(share, "rviz", "navigation.rviz")],
                  parameters=[{"use_sim_time": True}],

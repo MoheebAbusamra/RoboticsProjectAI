@@ -61,6 +61,8 @@ setup(
             "traffic_manager = factory_bot.traffic_manager:main",
             "traffic_test = factory_bot.traffic_test:main",
             "dashboard = factory_bot.dashboard:main",
+            "map_coordinator = factory_bot.map_coordinator:main",
+            "mapping_engine = factory_bot.mapping_engine:main",
         ],
     },
 )

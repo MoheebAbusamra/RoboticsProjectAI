@@ -26,12 +26,13 @@ from factory_bot.dashboard_state import (DashboardState, ROBOT_NAMES, age, topic
                                          image_rgb, delivery_request)
 from factory_bot.dashboard_navigation import (PLANNERS, CONTROLLERS, SETTINGS_TOPIC, TARGETS,
                                               display_option, navigation_request, settings_consensus)
+from factory_bot.dashboard_maps import MapsPanel
 
 BRAND='son3a feh masr | Made in Egypt'
 BG='#1b1116'; PANEL='#2a1a22'; BORDER='#60424e'; TEXT='#f3e8d2'; MUTED='#c4b19d'
 ACCENT='#e7d6b5'; ON_ACCENT='#291820'; GREEN='#b2caa6'; R1='#94cdbd'; R2='#dfb582'; RED='#efa39b'
 SCREEN='#170f14'; SCREEN_EDGE='#674650'; SCREEN_TEXT='#f4e9d4'; SCREEN_MUTED='#cdbda7'
-PIXEL_FAMILY='Pixelify Sans'
+MONO_FAMILY='DejaVu Sans Mono'
 COLORS={'robot1':R1,'robot2':R2}
 MAP_COLORS={'robot1':'#9dd9c5','robot2':'#efbf82'}
 
@@ -72,31 +73,26 @@ QToolTip {{ background: {SCREEN}; color: {TEXT}; border: 1px solid {BORDER}; pad
 '''
 
 
-def load_pixel_font(share):
-    """Register the bundled OFL font for this application only; no system install."""
-    global PIXEL_FAMILY
-    if 'Pixelify Sans' in QFontDatabase().families():
-        PIXEL_FAMILY='Pixelify Sans';return
-    for root in [share,Path(__file__).resolve().parents[1]]:
-        path=root/'models/dashboard/fonts/PixelifySans.ttf'
-        if path.is_file():
-            font_id=QFontDatabase.addApplicationFont(str(path))
-            families=QFontDatabase.applicationFontFamilies(font_id) if font_id>=0 else []
-            if families:PIXEL_FAMILY=families[0];return
-    PIXEL_FAMILY='DejaVu Sans Mono'
+def configure_mono_font(share=None):
+    """Use the desktop's readable monospace face without loading the pixel font."""
+    global MONO_FAMILY
+    families=QFontDatabase().families()
+    MONO_FAMILY=next((name for name in ('DejaVu Sans Mono','Liberation Mono','Noto Sans Mono')
+                      if name in families),QFontDatabase.systemFont(QFontDatabase.FixedFont).family())
 
 
-def pixel_font(size=14,bold=False):
-    font=QFont(PIXEL_FAMILY)
-    font.setPixelSize(max(14,2*math.ceil((size+2)/2)))
-    font.setWeight(QFont.DemiBold if bold else QFont.Medium)
-    font.setStyleStrategy(QFont.NoAntialias);font.setHintingPreference(QFont.PreferFullHinting)
+def mono_font(size=14,bold=False):
+    font=QFont(MONO_FAMILY)
+    font.setPixelSize(max(12,round(size)))
+    font.setStyleHint(QFont.Monospace);font.setFixedPitch(True)
+    font.setWeight(QFont.DemiBold if bold else QFont.Normal)
+    font.setStyleStrategy(QFont.PreferAntialias);font.setHintingPreference(QFont.PreferDefaultHinting)
     return font
 
 
 def text_label(text='', size=13, color=TEXT, bold=False, mono=False):
     w=QLabel(text)
-    w.setFont(pixel_font(size,bold))
+    w.setFont(mono_font(size,bold))
     w.setStyleSheet('color: '+color+';')
     return w
 
@@ -235,7 +231,7 @@ class FactoryView(QWidget):
                 glow=QColor(MAP_COLORS[robot]);glow.setAlpha(40);p.setPen(QPen(glow,10));p.drawPath(route)
                 pen=QPen(QColor(MAP_COLORS[robot]),2.3,Qt.DashLine);p.setPen(pen);p.drawPath(route)
         if self.labels:
-            p.setFont(pixel_font(10,True))
+            p.setFont(mono_font(10,True))
             for name,s in self.stations.items():
                 if name.startswith('HOME'):continue
                 pos=point(s['x'],s['y']);caption=name.replace('_',' ')
@@ -262,9 +258,9 @@ class FactoryView(QWidget):
             toward=point(pose[0]+.6*math.cos(pose[2]),pose[1]+.6*math.sin(pose[2]))
             delta=toward-pos;length=max(.001,math.hypot(delta.x(),delta.y()));end=pos+delta*(27/length)
             p.setPen(QPen(color,2));p.drawLine(pos,end)
-            p.setPen(color);p.setFont(pixel_font(10,True))
+            p.setPen(color);p.setFont(mono_font(10,True))
             p.drawText(QRectF(pos.x()-12,pos.y()-9,24,18),Qt.AlignCenter,'R'+robot[-1])
-        p.setPen(QColor(SCREEN_MUTED));p.setFont(pixel_font(10))
+        p.setPen(QColor(SCREEN_MUTED));p.setFont(mono_font(10))
         p.drawText(12,self.height()-12,'N ↑    16 × 14 m    /    ICP MAP FRAME')
         if not fleet:
             p.setPen(QColor(SCREEN_TEXT));p.drawText(QRectF(20,12,self.width()-40,24),Qt.AlignRight,'WAITING FOR LIVE POSES')
@@ -290,7 +286,7 @@ class CameraView(QWidget):
             p.setPen(QPen(QColor(SCREEN_EDGE),1));p.drawRoundedRect(r.adjusted(18,18,-18,-18),4,4)
             p.setPen(QColor(SCREEN_MUTED));p.drawText(r.adjusted(20,18,-20,-42),Qt.AlignCenter|Qt.TextWordWrap,'NO CAMERA SIGNAL\nEnable cameras in the simulation')
         strip=QRectF(0,r.height()-30,r.width(),30);p.fillRect(strip,QColor(33,18,23,225))
-        p.setPen(QColor('#b7d5b4' if self.live else '#efbf82'));p.setFont(pixel_font(10))
+        p.setPen(QColor('#b7d5b4' if self.live else '#efbf82'));p.setFont(mono_font(10))
         p.drawText(strip.adjusted(10,0,-10,0),Qt.AlignVCenter,self.note)
         p.end()
 
@@ -300,7 +296,7 @@ class SpeedChart(QWidget):
     def paintEvent(self,e):
         p=QPainter(self);p.setRenderHint(QPainter.Antialiasing)
         r=QRectF(42,12,max(1,self.width()-60),max(1,self.height()-38))
-        p.setPen(QPen(QColor('#4d3441'),1));p.setFont(pixel_font(10))
+        p.setPen(QPen(QColor('#4d3441'),1));p.setFont(mono_font(10))
         for value in [0,.15,.3,.45]:
             y=r.bottom()-value/.5*r.height();p.drawLine(QPointF(r.left(),y),QPointF(r.right(),y))
             p.setPen(QColor(MUTED));p.drawText(0,int(y+4),f'{value:.2f}');p.setPen(QPen(QColor('#4d3441'),1))
@@ -321,7 +317,7 @@ class SpeedChart(QWidget):
 class Dashboard(QMainWindow):
     def __init__(self,share,state,bridge=None):
         super().__init__();self.share,self.state,self.bridge=share,state,bridge
-        load_pixel_font(share);QApplication.instance().setFont(pixel_font(14))
+        configure_mono_font(share);QApplication.instance().setFont(mono_font(14))
         self.stations=yaml.safe_load((share/'config/stations.yaml').read_text())['stations']
         self.zones=yaml.safe_load((share/'config/zones.yaml').read_text())['zones']
         self.current_robot='robot1';self.camera_key=None;self.camera_error=None;self.last_tables=None;self.last_events=None
@@ -333,7 +329,7 @@ class Dashboard(QMainWindow):
         brand=QVBoxLayout();brand.setSpacing(2);brand.addWidget(text_label('son3a feh masr',20,ACCENT,True));brand.addWidget(text_label('Made in Egypt / FLEET OPERATIONS',10,MUTED,False,True))
         top.addLayout(brand);top.addStretch()
         self.nav=[]
-        for i,title in enumerate(['Overview','Mission queue','Diagnostics']):
+        for i,title in enumerate(['Overview','Mission queue','Maps','Diagnostics']):
             b=button(title,lambda checked=False,i=i:self.set_page(i));b.setObjectName('nav');b.setCheckable(True);b.setShortcut('Alt+'+str(i+1));self.nav.append(b);top.addWidget(b)
         top.addStretch();self.connection=text_label('CONNECTING',10,R2,False,True);top.addWidget(self.connection)
         self.simclock=text_label('--:--:-- SIM',11,MUTED,False,True);top.addWidget(self.simclock)
@@ -348,9 +344,12 @@ class Dashboard(QMainWindow):
         new=button('+  New mission',self.mission_dialog,True);new.setShortcut('Ctrl+N');self.actions.append(new);heading.addWidget(new);outer.addLayout(heading)
         self.banner=text_label('',12,R2);self.banner.setWordWrap(True);outer.addWidget(self.banner)
         self.pages=QStackedWidget();outer.addWidget(self.pages,1)
-        self.pages.addWidget(self.operations_page());self.pages.addWidget(self.missions_page());self.pages.addWidget(self.diagnostics_page())
+        self.pages.addWidget(self.operations_page());self.pages.addWidget(self.missions_page())
+        self.maps_panel=MapsPanel(share,state,self.send,self.stations,self.zones,bool(bridge))
+        self.pages.addWidget(self.maps_panel);self.pages.addWidget(self.diagnostics_page())
         bottom=QHBoxLayout();bottom.addWidget(text_label('son3a feh masr | Made in Egypt',10,MUTED,False,True));bottom.addStretch()
-        bottom.addWidget(text_label('STATIC MODEL + LIVE ROS TELEMETRY',9,MUTED,False,True));outer.addLayout(bottom)
+        self.map_badge=text_label('MAP / AWAITING COORDINATOR',9,MUTED,False,True)
+        bottom.addWidget(self.map_badge);outer.addLayout(bottom)
         self.set_page(0)
         self.timer=QTimer(self);self.timer.timeout.connect(self.refresh);self.timer.start(100)
         screen=QApplication.primaryScreen().availableGeometry();self.resize(min(1480,screen.width()-30),min(950,screen.height()-35))
@@ -503,7 +502,9 @@ class Dashboard(QMainWindow):
             snapshot=self.state.snapshot();data=snapshot['values'].get(SETTINGS_TOPIC,{})
             if submission[0] is not None and (snapshot['seen'].get(SETTINGS_TOPIC,0)>submission[0] or time.monotonic()-submission[0]>6):submission[0]=None
             pending=bool(data.get('applying') or submission[0] is not None)
-            available=bool(self.bridge and not snapshot['preview'] and data.get('ready') and age(snapshot,SETTINGS_TOPIC)<6)
+            maps=snapshot['values'].get('/maps/status',{})
+            held=snapshot['values'].get('/fleet/state',{}).get('map_paused',False)
+            available=bool(self.bridge and not snapshot['preview'] and not maps.get('busy') and not held and data.get('ready') and age(snapshot,SETTINGS_TOPIC)<6)
             apply.setEnabled(available and not pending)
             for combo in controls.values():combo.setEnabled(not pending)
             lines=[]
@@ -592,7 +593,13 @@ class Dashboard(QMainWindow):
         s=self.state.snapshot();self.snapshot=s;v=s['values'];now=time.monotonic()
         fresh=age(s,'/fleet/state',now)<3 and not s['error'] and not s['preview']
         settings=v.get(SETTINGS_TOPIC,{})
-        for a in self.actions:a.setEnabled(bool(fresh and self.bridge and not settings.get('applying')))
+        maps=v.get('/maps/status',{});map_busy=maps.get('busy') or v.get('/fleet/state',{}).get('map_paused',False)
+        for a in self.actions:a.setEnabled(bool(fresh and self.bridge and not settings.get('applying') and not map_busy))
+        self.navigation_button.setEnabled(not bool(map_busy))
+        self.maps_panel.refresh(s)
+        active_map=maps.get('active',{})
+        set_text(self.map_badge,('MAP / '+active_map.get('name','UNKNOWN')) if maps.get('verified') and age(s,'/maps/status',now)<2.5 else 'MAP / '+maps.get('phase','UNCONFIRMED'))
+        self.map_badge.setToolTip(active_map.get('source','Start the complete demo to verify the active map'))
         common=settings_consensus(settings.get('nodes',{}))
         if settings.get('applying'):profile='Navigation · applying…'
         elif settings.get('ready') and age(s,SETTINGS_TOPIC,now)<6:
@@ -740,7 +747,7 @@ def main(args=None):
             share=Path(get_package_share_directory('factory_bot'))
         except (ImportError,LookupError):share=Path(__file__).resolve().parents[1]
     app=QApplication([sys.argv[0]]);app.setApplicationName(BRAND)
-    load_pixel_font(share);app.setFont(pixel_font(14))
+    configure_mono_font(share);app.setFont(mono_font(14))
     palette=QPalette()
     for role,color in [(QPalette.Window,BG),(QPalette.Base,BG),(QPalette.AlternateBase,PANEL),
                        (QPalette.WindowText,TEXT),(QPalette.Text,TEXT),(QPalette.Button,PANEL),

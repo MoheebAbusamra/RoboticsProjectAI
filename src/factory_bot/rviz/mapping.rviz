@@ -4,46 +4,63 @@ Panels:
 Visualization Manager:
   Class: ""
   Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Factory metres
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 40
+      Color: 80; 64; 72
     - Class: rviz_default_plugins/Map
-      Name: OGM map
+      Name: Live measured survey map
       Enabled: true
       Topic:
-        Value: /ogm_map
+        Value: /mapping/preview
         Durability Policy: Transient Local
         Reliability Policy: Reliable
       Color Scheme: map
       Alpha: 0.9
-    - Class: rviz_default_plugins/Map
-      Name: SLAM map (comparison)
-      Enabled: false
+    - Class: rviz_default_plugins/Path
+      Name: Survey estimate trajectory
+      Enabled: true
       Topic:
-        Value: /map
+        Value: /mapping/preview_path
         Durability Policy: Transient Local
         Reliability Policy: Reliable
-      Color Scheme: map
-      Alpha: 0.6
+      Color: 100; 230; 180
+      Line Style: Lines
+    - Class: rviz_default_plugins/LaserScan
+      Name: Navigation lidar in factory frame
+      Enabled: true
+      Topic:
+        Value: /robot1/scan
+        Reliability Policy: Best Effort
+      Color Transformer: FlatColor
+      Color: 240; 170; 100
+      Size (m): 0.035
+      Style: Points
     - Class: rviz_default_plugins/RobotModel
-      Name: robot1 model
+      Name: Survey robot navigation pose
       Enabled: true
       Description Source: Topic
       Description Topic:
         Value: /robot1/robot_description
         Durability Policy: Transient Local
       TF Prefix: robot1
-    - Class: rviz_default_plugins/LaserScan
-      Name: robot1 scan
+    - Class: rviz_default_plugins/Path
+      Name: Current survey navigation route
       Enabled: true
       Topic:
-        Value: /robot1/scan
-        Reliability Policy: Best Effort
-      Color Transformer: FlatColor
-      Color: 255; 60; 60
-      Size (m): 0.05
-      Style: Points
+        Value: /robot1/plan
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      Color: 160; 190; 255
+      Line Style: Lines
   Global Options:
     Fixed Frame: map
-    Background Color: 48; 48; 48
+    Background Color: 23; 15; 20
   Views:
     Current:
       Class: rviz_default_plugins/TopDownOrtho
-      Scale: 50
+      Scale: 45
+      X: 7
+      Y: 6

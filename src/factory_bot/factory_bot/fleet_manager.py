@@ -21,15 +21,21 @@ import csv
 import json
 import math
 import os
+import time
 
 import rclpy
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from std_msgs.msg import String
+from std_srvs.srv import SetBool
+from nav2_msgs.srv import LoadMap
+from rclpy.parameter import Parameter
 
 from factory_bot.planners import plan
 from factory_bot.planning_grid import PlanningGrid
+from factory_bot.map_source import resolve_map_yaml
 from factory_bot.scheduler import Job, assign, pick_robot_to_interrupt, waiting_in_order
 
 CSV_COLUMNS = ["id", "priority", "pickup", "dropoff", "robot", "state", "allocation", "created", "assigned",
@@ -44,6 +50,8 @@ class FleetManager(Node):
         self.declare_parameter("robots", ["robot1", "robot2"])
         self.declare_parameter("allocation", "greedy")           # or "optimal"
         self.declare_parameter("algorithm", "astar")             # passed on to the navigators
+        self.declare_parameter("map_yaml", os.path.join(share, "maps", "factory_map.yaml"))
+        self.declare_parameter("start_paused", False)
         self.declare_parameter("dwell_s", 3.0)                   # loading / unloading time
         self.declare_parameter("return_after_s", 10.0)           # idle this long -> go home
         self.declare_parameter("emergency_kit", "TOOL_CRIB")     # where the emergency kit is kept
@@ -51,9 +59,15 @@ class FleetManager(Node):
         self.declare_parameter("results_csv", os.path.expanduser("~/factory_ws/results/jobs.csv"))
         get = lambda n: self.get_parameter(n).value             # noqa: E731
         self.get = get
-        self.grid = PlanningGrid.from_files(os.path.join(share, "maps", "factory_map.yaml"),
+        map_yaml = resolve_map_yaml(get("map_yaml"))
+        self.grid = PlanningGrid.from_files(map_yaml,
                                             os.path.join(share, "config", "planning.yaml"),
                                             os.path.join(share, "config", "zones.yaml"))
+        self.map_yaml = map_yaml
+        self.map_paused = get("start_paused")
+        self.safe_snapshot = None
+        self.status_at = {}
+        self.map_share = share
         with open(os.path.join(share, "config", "stations.yaml")) as f:
             self.stations = yaml.safe_load(f)["stations"]
 
@@ -68,9 +82,11 @@ class FleetManager(Node):
         self.state_pub = self.create_publisher(String, "/fleet/state", 10)
         self.create_subscription(String, "/delivery_request", self.on_request, 10)
         self.create_subscription(String, "/emergency_call", self.on_emergency, 10)
+        self.create_service(SetBool, "~/map_pause", self.on_map_pause)
+        self.create_service(LoadMap, "~/activate_map", self.on_map_load)
         self.create_timer(0.5, self.step)
-        self.create_timer(1.0, self.publish_state)
-        self.get_logger().info(f"fleet manager: robots {list(self.robots)}, allocation {get('allocation')}")
+        self.create_timer(1.0, self.publish_state, clock=Clock(clock_type=ClockType.STEADY_TIME))
+        self.get_logger().info(f"fleet manager: robots {list(self.robots)}, allocation {get('allocation')}, map {map_yaml}")
 
     # ------------------------------------------------------------------ inputs
     def now(self):
@@ -78,6 +94,52 @@ class FleetManager(Node):
 
     def on_status(self, robot, msg):
         self.robots[robot]["status"] = json.loads(msg.data)
+        self.status_at[robot] = time.monotonic()
+
+    def on_map_pause(self, request, response):
+        """Serialize the idle check and dispatch pause in the fleet's own executor."""
+        if not request.data:
+            self.map_paused = False; self.safe_snapshot = None
+            response.success = True; response.message = "Dispatch resumed"
+        else:
+            try:
+                if not self.safe_snapshot:
+                    poses, profiles = {}, {}
+                    for name, rec in self.robots.items():
+                        st = rec["status"] or {}
+                        if (rec["state"] != "IDLE" or rec["job"] or rec["suspended"] or
+                            time.monotonic()-self.status_at.get(name, -math.inf) > 1.5 or
+                            st.get("state") not in ("IDLE", "ARRIVED", "FAILED") or
+                            not st.get("stopped") or st.get("aside")):
+                            raise ValueError("Wait until both robots are idle and measured stopped")
+                        pose = st.get("pose")
+                        if not pose or len(pose) != 3 or not all(math.isfinite(v) for v in pose):
+                            raise ValueError("Fresh robot map poses are required")
+                        poses[name] = pose; profiles[name] = st["defaults"]
+                    self.safe_snapshot = {"poses": poses, "profiles": profiles}
+                self.map_paused = True
+                response.success = True; response.message = json.dumps(self.safe_snapshot)
+            except (KeyError, TypeError, ValueError) as error:
+                response.success = False; response.message = str(error)
+        self.publish_state()
+        return response
+
+    def on_map_load(self, request, response):
+        try:
+            if not self.map_paused or any(r["state"] != "IDLE" or r["job"] for r in self.robots.values()):
+                raise ValueError("Pause an idle fleet before changing its map")
+            path = resolve_map_yaml(request.map_url)
+            grid = PlanningGrid.from_files(path, os.path.join(self.map_share, "config", "planning.yaml"),
+                                            os.path.join(self.map_share, "config", "zones.yaml"))
+            result = self.set_parameters([Parameter("map_yaml", value=path)])[0]
+            if not result.successful: raise ValueError(result.reason)
+            self.grid, self.map_yaml = grid, path
+            response.result = LoadMap.Response.RESULT_SUCCESS
+        except Exception as error:
+            response.result = LoadMap.Response.RESULT_INVALID_MAP_DATA
+            self.get_logger().error("Map activation rejected: "+str(error))
+        self.publish_state()
+        return response
 
     def on_request(self, msg):
         try:
@@ -141,6 +203,7 @@ class FleetManager(Node):
 
     # ------------------------------------------------------------------ the main loop
     def step(self):
+        if getattr(self, "map_paused", False): return
         now = self.now()
         for r, rec in self.robots.items():
             job, state = rec["job"], rec["state"]
@@ -217,6 +280,7 @@ class FleetManager(Node):
         return pose is not None and math.hypot(pose[0] - home["x"], pose[1] - home["y"]) < 0.3
 
     def allocate(self, now):
+        if getattr(self, "map_paused", False): return
         idle = [r for r, rec in self.robots.items()
                 if rec["state"] in ("IDLE", "RETURNING") and self.pose_of(r) is not None]
         if not waiting_in_order(self.jobs):
@@ -296,6 +360,7 @@ class FleetManager(Node):
                "queue": [{"id": j.id, "priority": j.priority, "pickup": j.pickup, "dropoff": j.dropoff,
                           "waiting_s": round(now - j.created, 1)} for j in waiting_in_order(self.jobs)],
                "delivered": sum(j.state == "DELIVERED" for j in self.jobs),
+               "map_yaml": self.map_yaml, "map_paused": self.map_paused,
                "failed": sum(j.state == "FAILED" for j in self.jobs),
                # Additive scene metadata only: no cargo policy affects job scheduling/navigation.
                "cargo_jobs": [{"id": j.id, "robot": j.robot, "pickup": j.pickup, "dropoff": j.dropoff,

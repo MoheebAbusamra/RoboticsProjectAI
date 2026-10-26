@@ -40,10 +40,12 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from nav_msgs.msg import Odometry, Path
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool, String
+from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformException, TransformListener
 
 from factory_bot.controllers import make_follower, wrap
@@ -53,6 +55,7 @@ from factory_bot.motion_progress import MotionProgress
 from factory_bot.backup_recovery import BackupRecovery, rear_scan_clear, rear_map_clear
 from factory_bot.planners import path_to_world, plan
 from factory_bot.planning_grid import PlanningGrid
+from factory_bot.map_source import resolve_map_yaml
 from factory_bot.track_sim import cross_track
 
 
@@ -96,7 +99,13 @@ class Navigator(Node):
         self.robot = get("robot")
 
         planning_yaml = os.path.join(share, "config", "planning.yaml")
-        self.grid = PlanningGrid.from_files(get("map_yaml"), planning_yaml,
+        map_yaml = resolve_map_yaml(get("map_yaml"))
+        self.map_yaml = map_yaml
+        self.instance_id = uuid.uuid4().hex
+        self.map_hold = False
+        self.pending_map_goal = None
+        self.survey_owner = ''; self.survey_hold = False
+        self.grid = PlanningGrid.from_files(map_yaml, planning_yaml,
                                             os.path.join(share, "config", "zones.yaml"))
         with open(planning_yaml) as f:
             self.ctrl_settings = (yaml.safe_load(f) or {}).get("controller", {})
@@ -149,9 +158,12 @@ class Navigator(Node):
                               reliability=ReliabilityPolicy.RELIABLE)
         self.plan_pub = self.create_publisher(Path, f"/{r}/plan", plan_qos)
         self.status_pub = self.create_publisher(String, f"/{r}/nav_status", 10)
+        self.create_subscription(Bool, "/maps/hold", self.on_map_hold, plan_qos)
+        self.create_subscription(String, "/mapping/active_robot", self.on_survey_owner, plan_qos)
+        self.create_service(Trigger, "~/cancel_for_mapping", self.cancel_for_mapping)
         self.create_timer(0.05, self.loop)        # 20 Hz control
-        self.create_timer(0.2, self.publish_status)   # 5 Hz: the traffic manager needs fresh poses
-        self.get_logger().info(f"{r}: navigator ready (send a goal to /{r}/goto)")
+        self.create_timer(0.2, self.publish_status, clock=Clock(clock_type=ClockType.STEADY_TIME))
+        self.get_logger().info(f"{r}: navigator ready, map {map_yaml} (send a goal to /{r}/goto)")
 
     # ------------------------------------------------------------------ inputs
     def on_scan(self, msg):
@@ -238,12 +250,40 @@ class Navigator(Node):
                 "speed": opts.get("speed")}                        # e.g. faster for emergencies
 
     def on_goal(self, msg):
+        if getattr(self, "map_hold", False) or getattr(self, "survey_hold", False):
+            self.pending_map_goal = msg.data
+            return
         if self.aside is not None:                # making room for the other robot: do it afterwards
             self.resume_request = msg.data
             self.get_logger().info(f"{self.robot}: new goal noted - will go once the other robot has passed")
             return
         self.goal_request = msg.data
         self.start_goal(msg.data)
+
+    def on_map_hold(self, msg):
+        if self.map_hold == msg.data: return
+        self.map_hold = msg.data
+        if self.map_hold: self.stop()
+        elif self.pending_map_goal:
+            text, self.pending_map_goal = self.pending_map_goal, None
+            self.on_goal(String(data=text))
+        self.publish_status()
+
+    def on_survey_owner(self, msg):
+        if msg.data not in ('', 'robot1'): return
+        self.survey_owner = msg.data; self.survey_hold = bool(msg.data and msg.data != self.robot)
+        if self.survey_hold: self.stop()
+        self.publish_status()
+
+    def cancel_for_mapping(self, request, response):
+        if not self.map_hold or self.survey_owner != self.robot:
+            response.success = False; response.message = 'Survey stop requires an acknowledged mapping hold'
+        else:
+            self.stop(); self.backup.reset(); self.motion_progress.reset()
+            self.state = 'IDLE'; self.goal = None; self.follower = None; self.goal_request = None
+            self.aside = self.resume_request = self.pending_map_goal = None
+            self.publish_status(); response.success = True; response.message = 'Survey goal stopped'
+        return response
 
     def start_goal(self, text, name=None):
         try:
@@ -306,6 +346,7 @@ class Navigator(Node):
         cmd, old = t.get("cmd", "go"), self.traffic.get("cmd", "go")
         self.traffic, self.traffic_until = t, self.now() + 3.0
         self.traffic_at = self.now()
+        if getattr(self, "survey_hold", False): self.stop(); return
         if self.backup.active:
             if cmd!="go":self.stop()
             return  # an ASIDE request cannot replace a reserved reverse maneuver
@@ -452,6 +493,8 @@ class Navigator(Node):
         return True
 
     def loop(self):
+        if getattr(self, "map_hold", False) or getattr(self, "survey_hold", False):
+            self.stop(); return
         if self.state not in ("DRIVING", "BLOCKED", "ALIGNING", "RECOVERING"):
             return
         pose = self.pose()
@@ -653,6 +696,10 @@ class Navigator(Node):
     def publish_status(self):
         pose = self.pose()
         out = {"robot": self.robot, "state": self.state,
+               "map_yaml": getattr(self, "map_yaml", ""), "instance_id": getattr(self, "instance_id", ""),
+               "map_hold": getattr(self, "map_hold", False),
+               "survey_hold": getattr(self, "survey_hold", False), "survey_owner": getattr(self, "survey_owner", ""),
+               "defaults": {"algorithm": self.get("algorithm"), "controller": self.get("controller")},
                "pose": [round(v, 3) for v in pose] if pose else None,
                "traffic": self.traffic.get("cmd", "go"), "aside": self.aside is not None}
         out["stopped"]=(0<=self.now()-self.odom_at<=self.get("scan_timeout") and

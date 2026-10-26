@@ -13,6 +13,9 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+from factory_bot.map_source import resolve_map_yaml
+from factory_bot.map_catalog import robot_options
+
 # Where each robot is spawned in GAZEBO (must match SPAWN in fleet_sim.launch.py)
 SPAWN = {"robot1": (1.0, 1.0, 0.0), "robot2": (2.6, 1.0, 0.0)}
 # The map's (0,0) is where robot1 stood when the map was made (Gazebo 1.0, 1.0, facing +x)
@@ -21,7 +24,8 @@ MAP_ORIGIN_IN_GAZEBO = (1.0, 1.0)
 
 def launch_setup(context, *args, **kwargs):
     robots = [r.strip() for r in LaunchConfiguration("robots").perform(context).split(",") if r.strip()]
-    map_yaml = LaunchConfiguration("map").perform(context)
+    map_yaml = resolve_map_yaml(LaunchConfiguration("map").perform(context))
+    poses = robot_options(LaunchConfiguration("initial_poses").perform(context), robots, "poses")
 
     actions = [
         Node(package="nav2_map_server", executable="map_server", name="map_server", output="screen",
@@ -34,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
     ]
     for r in robots:
         gx, gy, yaw = SPAWN[r]
-        start = [gx - MAP_ORIGIN_IN_GAZEBO[0], gy - MAP_ORIGIN_IN_GAZEBO[1], yaw]   # Gazebo -> map
+        start = poses.get(r, [gx - MAP_ORIGIN_IN_GAZEBO[0], gy - MAP_ORIGIN_IN_GAZEBO[1], yaw])
         actions.append(Node(package="factory_bot", executable="icp_localizer", name="icp_localizer",
                             namespace=r, output="screen",
                             parameters=[{"use_sim_time": True, "robot": r, "map_yaml": map_yaml,
@@ -47,5 +51,6 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("robots", default_value="robot1,robot2"),
         DeclareLaunchArgument("map", default_value=default_map),
+        DeclareLaunchArgument("initial_poses", default_value="{}"),
         OpaqueFunction(function=launch_setup),
     ])

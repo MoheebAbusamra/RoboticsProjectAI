@@ -98,6 +98,8 @@ class DashboardState:
                     kind='recovery' if value['state']=='RECOVERING' else 'success' if value['state']=='ARRIVED' else 'warning'
                     self.event(kind,
                                topic.split('/')[1].upper()+' · '+value['state'], now)
+            elif topic == '/maps/status' and previous and value.get('phase') != previous.get('phase'):
+                self.event('map', 'Map / '+value.get('phase','unknown')+' · '+value.get('message',''), now)
 
     def clock(self, sim, now=None):
         now = time.monotonic() if now is None else now

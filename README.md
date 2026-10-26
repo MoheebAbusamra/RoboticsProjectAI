@@ -1,5 +1,20 @@
 # Factory delivery fleet (ROS 2 Jazzy)
 
+## On-demand measured maps
+
+The dashboard uses antialiased DejaVu Sans Mono (with system monospace fallbacks).
+Mapping Studio includes live map/trajectory preview and a dedicated RViz view,
+opened automatically by default, plus progress within each survey waypoint.
+
+Start the complete demo with `./run.sh`, wait for both robots idle at HOME, then
+open **Maps → Generate map / Mapping studio**. Choose SLAM, OGM, or SLAM + OGM.
+Robot 1 follows a guided survey while fleet dispatch and moving obstacles pause;
+it returns home and restores the scene before queued work resumes. Combined mode
+produces a SLAM-pose OGM plus separate maps and numerical comparisons. Select a
+saved result, preview it, and explicitly **Use this map**. The original reference
+map remains available. See [the mapping guide](docs/on_demand_mapping.md) for
+frames, saved files, limitations and failure handling.
+
 ## Northline Control: factory visuals, robot and Python dashboard
 
 In an Ubuntu desktop terminal:
@@ -213,6 +228,34 @@ ros2 run factory_bot send_job --demo
 Ctrl+C in the launch terminal stops its child processes. The original
 `stop_all.sh` is a broad emergency cleanup that can stop other ROS projects,
 so use it only when appropriate.
+
+## Select the navigation map
+
+The complete demo accepts one shared `map` argument:
+
+```bash
+./run.sh map:=/absolute/path/to/saved_map.yaml
+```
+
+The map server, both ICP localizers, both navigators, fleet assignment and
+traffic side-position searches all receive that same map. With no override,
+the included `factory_map.yaml` remains the default. A missing selected file
+is an error; there is no automatic fallback to the generated map.
+
+The dashboard's **Maps** tab can now preview and activate saved maps while both
+robots are idle. The complete demo supervises a restartable navigation group;
+Gazebo, cameras, the dashboard and the in-memory fleet queue remain running.
+Activation preserves pose estimates and navigation defaults and waits for fresh
+localization before dispatch resumes. A failed activation attempts to restore
+the previous map. The generated map remains available through **Restore
+generated map**. Map files must use the existing factory coordinate frame so
+station locations and policy zones remain aligned.
+
+Restart an older demo once to load the new coordinator. Standalone fleet launch
+also supports `managed_maps:=true`; its default remains the original unmanaged
+behavior. SLAM/OGM session-generation buttons are a subsequent step. See
+[dashboard map controls](docs/dashboard_maps.md) and
+[launch-map details](docs/map_selection.md).
 
 ## Mapping and offline tools
 

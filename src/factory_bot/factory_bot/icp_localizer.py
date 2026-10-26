@@ -15,18 +15,22 @@ AI-assisted (Claude): cite in report."""
 import collections
 import math
 import os
+import uuid
+import json
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from tf2_ros import TransformBroadcaster
 
 from factory_bot.compare_maps import load_map
+from factory_bot.map_source import resolve_map_yaml
 from factory_bot.icp import WallLookup, icp_localize, relocalize, scan_to_points
 
 
@@ -71,9 +75,11 @@ class IcpLocalizer(Node):
         self.initial = tuple(get("initial_pose"))
         self.every = int(get("every_n_scans"))
 
-        occupied, res, origin = load_map(get("map_yaml"))
+        map_yaml = resolve_map_yaml(get("map_yaml"))
+        self.map_yaml = map_yaml; self.instance_id = uuid.uuid4().hex
+        occupied, res, origin = load_map(map_yaml)
         self.walls = WallLookup(occupied, res, origin, max_distance=0.5)
-        self.get_logger().info(f"{self.robot}: map loaded, {len(self.walls.walls)} wall cells")
+        self.get_logger().info(f"{self.robot}: map {map_yaml} loaded, {len(self.walls.walls)} wall cells")
 
         self.correction = None                    # map -> odom, set when the first odometry arrives
         self.odom_hist = collections.deque(maxlen=100)        # recent (time, x, y, yaw) in odom frame
@@ -81,14 +87,18 @@ class IcpLocalizer(Node):
         self.rejected_in_row = 0                  # ICP failures since the last good match
         self.next_recovery = 0.0                  # sim time of the next allowed recovery search
         self.stats = {"tried": 0, "accepted": 0, "rms": [], "matched": []}
+        self.accepted_since_start = 0
+        self.last_scan_at = -math.inf
 
         self.create_subscription(Odometry, f"/{self.robot}/odom", self.on_odom, 50)
         self.create_subscription(LaserScan, f"/{self.robot}/scan", self.on_scan, qos_profile_sensor_data)
         self.pose_pub = self.create_publisher(PoseStamped, f"/{self.robot}/icp_pose", 10)
         self.ok_pub = self.create_publisher(Bool, f"/{self.robot}/localization_ok", 10)
+        self.status_pub = self.create_publisher(String, f"/{self.robot}/icp_status", 10)
         self.tf_pub = TransformBroadcaster(self)
         self.create_timer(0.05, self.publish_tf)
         self.create_timer(5.0, self.log_stats)
+        self.create_timer(.5, self.publish_map_status, clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def on_odom(self, msg):
         p = msg.pose.pose
@@ -121,6 +131,7 @@ class IcpLocalizer(Node):
                 and jump <= self.get_parameter("max_jump").value):
             self.correction = compose(pose, inverse(odom))     # so that correction o odom = pose
             self.stats["accepted"] += 1
+            self.accepted_since_start += 1
             self.stats["rms"].append(info["rms"])
             self.stats["matched"].append(info["matched"])
             self.rejected_in_row = 0
@@ -130,7 +141,14 @@ class IcpLocalizer(Node):
             if self.rejected_in_row >= self.get_parameter("lost_after").value:
                 pose = self.recover(points, guess, odom, t) or pose
         self.ok_pub.publish(Bool(data=self.rejected_in_row < self.get_parameter("lost_after").value))
+        self.last_scan_at = t
         self.publish_pose(pose, msg.header.stamp)
+
+    def publish_map_status(self):
+        age = self.get_clock().now().nanoseconds*1e-9-self.last_scan_at
+        self.status_pub.publish(String(data=json.dumps({"map_yaml": self.map_yaml,
+            "instance_id": self.instance_id, "accepted": self.accepted_since_start,
+            "ok": self.accepted_since_start > 0 and self.rejected_in_row == 0 and 0 <= age <= .6})))
 
     def recover(self, points, guess, odom, t):
         """Wide search when lost. Returns the recovered pose, or None (then retry in 3 s)."""
@@ -143,6 +161,7 @@ class IcpLocalizer(Node):
                 and info["rms"] <= self.get_parameter("max_rms").value:
             self.correction = compose(pose, inverse(odom))
             self.rejected_in_row = 0
+            self.accepted_since_start += 1
             self.get_logger().warn(f"{self.robot}: RECOVERED - estimate moved "
                                    f"{math.hypot(pose[0] - guess[0], pose[1] - guess[1]):.2f} m and "
                                    f"{math.degrees(abs(pose[2] - guess[2])):.0f} deg "

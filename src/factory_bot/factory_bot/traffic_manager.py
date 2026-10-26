@@ -13,15 +13,18 @@ import csv
 import json
 import math
 import os
+import uuid
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Path
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String
 
 from factory_bot.planning_grid import PlanningGrid
+from factory_bot.map_source import resolve_map_yaml
 from factory_bot.traffic import MOVING, RobotView, TrafficRules, priority, remaining_route
 
 CSV_COLUMNS = ["time", "robot", "event", "because", "rule", "duration_s", "robots_apart_m", "spot"]
@@ -32,6 +35,7 @@ class TrafficManager(Node):
         super().__init__("traffic_manager")
         share = get_package_share_directory("factory_bot")
         self.declare_parameter("robots", ["robot1", "robot2"])
+        self.declare_parameter("map_yaml", os.path.join(share, "maps", "factory_map.yaml"))
         self.declare_parameter("lookahead_m", 2.5)       # m of each route compared
         self.declare_parameter("clearance_m", 0.9)       # routes closer than this = conflict
         self.declare_parameter("release_s", 1.0)         # way clear this long before a waiting robot goes
@@ -41,7 +45,9 @@ class TrafficManager(Node):
         self.declare_parameter("results_csv", os.path.expanduser("~/factory_ws/results/traffic.csv"))
         get = lambda n: self.get_parameter(n).value     # noqa: E731
         self.get = get
-        grid = PlanningGrid.from_files(os.path.join(share, "maps", "factory_map.yaml"),
+        map_yaml = resolve_map_yaml(get("map_yaml"))
+        self.map_yaml = map_yaml; self.instance_id = uuid.uuid4().hex
+        grid = PlanningGrid.from_files(map_yaml,
                                        os.path.join(share, "config", "planning.yaml"),
                                        os.path.join(share, "config", "zones.yaml"))
         self.rules = TrafficRules(grid, get("lookahead_m"), get("clearance_m"), get("release_s"),
@@ -52,6 +58,7 @@ class TrafficManager(Node):
         self.path = {r: [] for r in self.robots}
         self.blocked_since = {r: None for r in self.robots}
         self.fleet = {}
+        self.survey_owner = ''
         self.sent, self.last_send = {}, {}
         self.totals = {r: {"waits": 0, "asides": 0, "wait_s": 0.0} for r in self.robots}
         self.closest_m = math.inf
@@ -62,10 +69,11 @@ class TrafficManager(Node):
             self.create_subscription(String, f"/{r}/nav_status", lambda m, r=r: self.on_status(r, m), 10)
             self.create_subscription(Path, f"/{r}/plan", lambda m, r=r: self.on_path(r, m), plan_qos)
         self.create_subscription(String, "/fleet/state", self.on_fleet, 10)
+        self.create_subscription(String, "/mapping/active_robot", self.on_survey_owner, plan_qos)
         self.state_pub = self.create_publisher(String, "/traffic/state", 10)
         self.create_timer(0.25, self.tick)
-        self.create_timer(1.0, self.publish_state)
-        self.get_logger().info(f"traffic manager: {self.robots}")
+        self.create_timer(1.0, self.publish_state, clock=Clock(clock_type=ClockType.STEADY_TIME))
+        self.get_logger().info(f"traffic manager: {self.robots}, map {map_yaml}")
 
     def now(self):
         return self.get_clock().now().nanoseconds * 1e-9
@@ -80,6 +88,9 @@ class TrafficManager(Node):
     def on_fleet(self, msg):
         self.fleet = json.loads(msg.data).get("robots", {})
 
+    def on_survey_owner(self, msg):
+        if msg.data in ('', 'robot1'): self.survey_owner = msg.data
+
     def view(self, robot, now):
         st = self.status[robot] or {}
         pose = st.get("pose")
@@ -89,12 +100,14 @@ class TrafficManager(Node):
         else:
             self.blocked_since[robot] = None
         active = nav in MOVING
+        survey_parked = bool(getattr(self, 'survey_owner', '') and robot != self.survey_owner)
+        if survey_parked: active = False
         recovery=st.get('recovery') if nav=='RECOVERING' else None
         route=(recovery.get('path') if recovery else self.path[robot]) or []
         f = self.fleet.get(robot, {})
         return RobotView(robot, tuple(pose) if pose else None, active,
                          remaining_route(route, pose) if active else [],
-                         f.get("state") or "IDLE", f.get("priority"),
+                         "LOADING" if survey_parked else f.get("state") or "IDLE", f.get("priority"),
                          now - self.blocked_since[robot] if self.blocked_since[robot] else 0.0,
                          recovery,0<=now-self.received[robot]<=self.get('backup_status_timeout'),
                          st.get('stopped',False),st.get('traffic_hold'))
@@ -160,6 +173,7 @@ class TrafficManager(Node):
         out = {"robots": {r: {"cmd": c["cmd"], "because": c["because"], "rule": c["rule"],
                               "spot": c["spot"],**{k:c[k] for k in ('backup_granted','backup_id','backup_hold') if k in c},
                               **self.totals[r]} for r, c in self.rules.cmd.items()},
+               "map_yaml": self.map_yaml, "instance_id": self.instance_id,
                "closest_m": round(self.closest_m, 2) if math.isfinite(self.closest_m) else None}
         self.state_pub.publish(String(data=json.dumps(out)))
 

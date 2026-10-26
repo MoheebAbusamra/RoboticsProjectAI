@@ -21,6 +21,7 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from std_msgs.msg import String
@@ -43,6 +44,8 @@ class ObstacleMover(Node):
                        for name, m in cfg["movers"].items()}
         self.placeable = cfg.get("placeable", {})
         self.active = bool(self.get_parameter("enabled").value)
+        self.placements = {}; self.inflight = {}; self.pose_errors = {}; self.places = {name:'parked' for name in self.placeable}
+        self.state_pub = self.create_publisher(String, '/fleet/obstacles_state', 10)
         self.robot_xy = {}                                   # robot -> true (x, y) in Gazebo
         for r in self.get_parameter("robots").value:
             self.create_subscription(Odometry, f"/{r}/ground_truth",
@@ -51,6 +54,7 @@ class ObstacleMover(Node):
         self.client = self.create_client(SetEntityPose, f"/world/{cfg.get('world', 'factory')}/set_pose")
         self.create_subscription(String, "/fleet/obstacle_event", self.on_event, 10)
         self.create_timer(self.dt, self.tick)
+        self.create_timer(.5, self.publish_state, clock=Clock(clock_type=ClockType.STEADY_TIME))
         self.get_logger().info(f"obstacle mover: {list(self.movers)}, enabled={self.active}, "
                                f"they give way to robots")
 
@@ -58,12 +62,28 @@ class ObstacleMover(Node):
         """Ask Gazebo to put model `name` at (x, y, z, yaw). Fire and forget (no waiting)."""
         if not self.client.service_is_ready():
             self.get_logger().warn("set_pose service not available yet", throttle_duration_sec=5.0)
+            self.pose_errors[name] = 'set_pose service unavailable'; self.publish_state()
             return
         req = SetEntityPose.Request()
         req.entity.name, req.entity.type = name, Entity.MODEL
         req.pose.position.x, req.pose.position.y, req.pose.position.z = float(x), float(y), float(z)
         req.pose.orientation.z, req.pose.orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
-        self.client.call_async(req)
+        future = self.client.call_async(req); self.placements[name] = future; self.inflight[future] = name
+        def done(result):
+            self.inflight.pop(result,None)
+            if self.placements.get(name) is result:
+                del self.placements[name]
+                try:
+                    if not result.result().success: raise RuntimeError('Gazebo rejected pose')
+                    self.pose_errors.pop(name,None)
+                except Exception as error:self.pose_errors[name] = str(error)
+            self.publish_state()
+        future.add_done_callback(done)
+
+    def publish_state(self):
+        self.state_pub.publish(String(data=json.dumps({'enabled':self.active,'places':self.places,
+            'settled':not self.inflight and not self.pose_errors,'errors':self.pose_errors,
+            'pending':sorted(set(self.inflight.values()))})))
 
     def robot_near(self, x, y, distance):
         """Name of a robot within `distance` of (x, y), or None."""
@@ -108,6 +128,7 @@ class ObstacleMover(Node):
             self.get_logger().error(f"unknown place {place} for {name}")
             return
         self.set_pose(name, xy[0], xy[1], spec["z"])
+        self.places[name] = place
         self.get_logger().info(f"{name} -> {place} {xy}")
 
 
