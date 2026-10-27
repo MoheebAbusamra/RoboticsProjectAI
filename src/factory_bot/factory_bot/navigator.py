@@ -27,7 +27,7 @@ Step 14 - dynamic replanning: lidar points that are not on the saved map go into
   aisle) -> keep the goal, stay BLOCKED and retry; it may move (Step 17: the traffic manager makes it move)
 Pose = TF map -> robotN/base_footprint (ICP correction + wheel odometry, Step 9).
 Ground truth is read ONLY to measure how well the robot did (goal error, cross-track), never to drive.
-AI-assisted (Claude): cite in report."""
+"""
 import json
 import math
 import os

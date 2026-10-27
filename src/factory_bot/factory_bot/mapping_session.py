@@ -54,7 +54,11 @@ class MappingSession:
             if self.phase=='PAUSING':
                 response=self.result()
                 if response is None:return
+                if not getattr(self.io,'world_ready',lambda:True)():return
                 self.snapshot=json.loads(response.message)
+                # Capture after the obstacle controller has acknowledged the mapping lock
+                # and any earlier dashboard placement has completed.
+                self.world=self.io.world_snapshot()
                 self.io.role('robot1');self.io.park_world();self.stage('PARKING',now)
             elif self.phase=='PARKING':
                 if not self.io.parked():return

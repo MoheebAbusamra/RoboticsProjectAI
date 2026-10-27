@@ -8,7 +8,7 @@ Out:  /robotN/traffic (String JSON)  {"cmd": "go" | "wait" | "aside", "because":
       sent when it changes and repeated every second (the navigator carries on if we go silent)
       /traffic/state (String JSON, 1 Hz, for the dashboard)
       ~/factory_ws/results/traffic.csv  one row per event: who waited / made room, for whom, why, how long
-AI-assisted (Claude): cite in report."""
+"""
 import csv
 import json
 import math

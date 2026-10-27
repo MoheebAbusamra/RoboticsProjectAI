@@ -4,7 +4,6 @@
 #   ros2 launch factory_bot fleet.launch.py allocation:=optimal algorithm:=dijkstra controller:=pid
 #   ros2 launch factory_bot fleet.launch.py traffic:=false        (no traffic rules - for comparison)
 # Send jobs:  ros2 run factory_bot send_job --demo
-# AI-assisted (Claude): cite in report.
 import os
 
 from ament_index_python.packages import get_package_share_directory

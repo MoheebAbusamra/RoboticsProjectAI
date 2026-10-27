@@ -57,7 +57,7 @@ class RosBridge(threading.Thread):
             executor.add_node(node)
             publishers = {kind: node.create_publisher(String, topic, 10) for kind, topic in
                           [('delivery', '/delivery_request'), ('emergency', '/emergency_call'),
-                           ('map_activate', '/maps/request')]}
+                           ('map_activate', '/maps/request'),('pallet','/fleet/pallet_request')]}
             navigation = NavigationSettingsClient(self.state,
                 {name: AsyncParameterClient(node, name) for name in TARGETS},
                 lambda name, value: Parameter(name, value=value))
@@ -69,7 +69,7 @@ class RosBridge(threading.Thread):
                 except (ValueError, TypeError):
                     self.state.event('warning', 'Invalid JSON on '+topic)
 
-            for topic in ['/fleet/state', '/traffic/state', '/maps/status']:
+            for topic in ['/fleet/state', '/traffic/state', '/maps/status', '/fleet/obstacles_state']:
                 node.create_subscription(String, topic, lambda m, t=topic: json_message(t, m), 10)
             path_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
                                   reliability=ReliabilityPolicy.RELIABLE)
@@ -137,6 +137,20 @@ class RosBridge(threading.Thread):
                     try: kind, payload, submitted = self.commands.get_nowait()
                     except queue.Empty: break
                     try:
+                        if kind == 'pallet':
+                            with self.state.lock:
+                                obstacle=self.state.values.get('/fleet/obstacles_state',{})
+                                stamp=self.state.seen.get('/fleet/obstacles_state',-math.inf)
+                                maps=self.state.values.get('/maps/status',{})
+                                held=self.state.values.get('/fleet/state',{}).get('map_paused')
+                            if now-stamp>2.5 or not obstacle.get('pallet'):raise ValueError('Waiting for the updated pallet controller.')
+                            if maps.get('busy') or held or obstacle['pallet'].get('blocked'):raise ValueError('Pallet controls are locked during mapping or map switching.')
+                            if now-submitted>5:raise ValueError('Pallet request expired before it could be sent.')
+                            if payload.get('action') not in ('place','remove'):raise ValueError('Invalid pallet action.')
+                            if publishers[kind].get_subscription_count()==0:raise ValueError('Pallet controller is not listening.')
+                            publishers[kind].publish(String(data=json.dumps(payload)))
+                            self.state.event('obstacle','Pallet request sent / awaiting Gazebo acknowledgement')
+                            continue
                         if kind == 'map_activate':
                             with self.state.lock:
                                 maps=self.state.values.get('/maps/status',{})

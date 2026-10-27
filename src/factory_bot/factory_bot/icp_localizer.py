@@ -11,7 +11,7 @@ If ICP is rejected the robot keeps going on odometry alone until the next good m
 LOST: if ICP is rejected lost_after times in a row (e.g. the robot was pushed, so odometry is far
 off), localization_ok becomes false (the navigator stops) and relocalize() searches +-3 m / +-57 deg
 around the guess for the pose where the scan fits the walls best. Found -> RECOVERED, else retry.
-AI-assisted (Claude): cite in report."""
+"""
 import collections
 import math
 import os

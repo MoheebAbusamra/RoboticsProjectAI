@@ -2,7 +2,6 @@
 #   robot1 only, movers parked, Gazebo without its window, the auto-driver,
 #   a recording (bag), mapping_check (measures SLAM's inputs) and a live OGM map to watch.
 # The final map is made afterwards from the recording (map_from_bag.launch.py).
-# AI-assisted (Claude): cite in report.
 #   ros2 launch factory_bot mapping.launch.py
 #   ros2 launch factory_bot mapping.launch.py slam:=true    # DEMO ONLY: live SLAM, recording OFF
 #   ros2 launch factory_bot mapping.launch.py rviz:=true    # also open RViz (heavy in the VM)

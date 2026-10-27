@@ -10,7 +10,7 @@ Tests (one after the other, each waits until the previous one is over):
 Measured per test: time until both are done, how close the robots came (true positions from Gazebo,
 centre to centre: under ~0.47 m their bodies touch), how often a robot waited / made room.
 Results: printed + appended to ~/factory_ws/results/traffic_test.csv
-AI-assisted (Claude): cite in report."""
+"""
 import csv
 import json
 import math

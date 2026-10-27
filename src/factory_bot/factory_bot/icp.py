@@ -10,7 +10,7 @@ points sit on the walls. The final pose is the corrected robot pose.
 Like the course says: ICP needs a good initial guess and overlap, and can lock onto a wrong
 alignment in repetitive geometry. Odometry gives the guess; checks below reject bad results.
 best_rigid_transform() follows icp() in the course's teaching/navigation.py (Lab 4).
-AI-assisted (Claude): cite in report."""
+"""
 import math
 
 import numpy as np

@@ -10,7 +10,7 @@ frontier cell they expand next (the table in the Lab 4 manual):
 Moves: 8 neighbours (diagonals cost sqrt 2). A diagonal is allowed only if both cells it
 squeezes between are passable, so a path never cuts a wall corner.
 Step cost = step length (1 or sqrt 2) x cost of the cell entered (planning_grid.py).
-AI-assisted (Claude): cite in report. Compare with your own Lab 4 planner_skeleton.py."""
+Compare with your own Lab 4 planner_skeleton.py."""
 import heapq
 import math
 import time

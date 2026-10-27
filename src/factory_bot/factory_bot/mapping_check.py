@@ -9,7 +9,7 @@ Every 5 seconds (wall clock) it prints one line and adds one row to a CSV file:
   odom error   wheel odometry vs Gazebo ground truth: position (m) and heading (deg)
 On Ctrl+C it prints a summary with the worst values and what they mean.
 Works live (mapping.launch.py) and on a recording (map_from_bag.launch.py).
-AI-assisted (Claude): cite in report."""
+"""
 import csv
 import math
 import os

@@ -11,10 +11,11 @@ Parameters: enabled (bool), robots (list), config (path)
 Subscribes: /fleet/obstacle_event  {"model": "pallet_1", "place": "main_aisle" | "left_aisle" | "parked"}
                                    {"model": "movers", "place": "on" | "off"}
             /robotN/ground_truth   (only to give way - this is the simulated world, not the robot's brain)
-AI-assisted (Claude): cite in report."""
+"""
 import json
 import math
 import os
+import time
 
 import rclpy
 import yaml
@@ -22,11 +23,14 @@ from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.clock import Clock, ClockType
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from std_msgs.msg import String
 
 from factory_bot.routes import Route
+from factory_bot.pallet_placement import PlacementPolicy
+from factory_bot.pallet_control import PalletControl
 
 
 class ObstacleMover(Node):
@@ -46,12 +50,18 @@ class ObstacleMover(Node):
         self.active = bool(self.get_parameter("enabled").value)
         self.placements = {}; self.inflight = {}; self.pose_errors = {}; self.places = {name:'parked' for name in self.placeable}
         self.state_pub = self.create_publisher(String, '/fleet/obstacles_state', 10)
-        self.robot_xy = {}                                   # robot -> true (x, y) in Gazebo
+        self.robot_xy = {}; self.robot_seen = {}; self.robot_names=list(self.get_parameter('robots').value)
+        self.map_busy=False;self.mapping_owner=''
         for r in self.get_parameter("robots").value:
             self.create_subscription(Odometry, f"/{r}/ground_truth",
-                                     lambda msg, r=r: self.robot_xy.__setitem__(
-                                         r, (msg.pose.pose.position.x, msg.pose.pose.position.y)), 10)
+                                     lambda msg, r=r: self.on_robot(msg,r), 10)
         self.client = self.create_client(SetEntityPose, f"/world/{cfg.get('world', 'factory')}/set_pose")
+        self.pallet=PalletControl(PlacementPolicy.from_share(share,cfg),self.placeable['pallet_1'],
+            lambda x,y,z:self.set_pose('pallet_1',x,y,z),self.on_pallet_changed)
+        latched=QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL,reliability=ReliabilityPolicy.RELIABLE)
+        self.create_subscription(String,'/fleet/pallet_request',self.on_pallet_request,10)
+        self.create_subscription(String,'/maps/status',self.on_maps,latched)
+        self.create_subscription(String,'/mapping/active_robot',self.on_mapping_owner,latched)
         self.create_subscription(String, "/fleet/obstacle_event", self.on_event, 10)
         self.create_timer(self.dt, self.tick)
         self.create_timer(.5, self.publish_state, clock=Clock(clock_type=ClockType.STEADY_TIME))
@@ -79,11 +89,42 @@ class ObstacleMover(Node):
                 except Exception as error:self.pose_errors[name] = str(error)
             self.publish_state()
         future.add_done_callback(done)
+        return future
+
+    def on_robot(self,msg,robot):
+        p=msg.pose.pose.position
+        if math.isfinite(p.x) and math.isfinite(p.y):
+            self.robot_xy[robot]=(p.x,p.y);self.robot_seen[robot]=time.monotonic()
+
+    def placement_robots(self):
+        now=time.monotonic()
+        if any(now-self.robot_seen.get(r,-math.inf)>1.5 for r in self.robot_names):return None
+        return {r:(self.robot_xy[r][0]-1.,self.robot_xy[r][1]-1.) for r in self.robot_names}
+
+    def on_maps(self,msg):
+        try:self.map_busy=bool(json.loads(msg.data).get('busy'))
+        except (ValueError,TypeError,AttributeError):pass
+
+    def on_mapping_owner(self,msg):self.mapping_owner=msg.data
+
+    def pallet_blocked(self):
+        if self.map_busy or self.mapping_owner:return 'Pallet controls are locked during mapping or map switching'
+        return ''
+
+    def on_pallet_changed(self):
+        self.places['pallet_1']=self.pallet.place;self.publish_state()
+
+    def on_pallet_request(self,msg):
+        try:self.pallet.request(json.loads(msg.data),self.placement_robots(),self.pallet_blocked())
+        except (ValueError,TypeError) as error:self.get_logger().warn('Invalid pallet request: '+str(error))
 
     def publish_state(self):
-        self.state_pub.publish(String(data=json.dumps({'enabled':self.active,'places':self.places,
+        state={'enabled':self.active,'places':self.places,
             'settled':not self.inflight and not self.pose_errors,'errors':self.pose_errors,
-            'pending':sorted(set(self.inflight.values()))})))
+            'pending':sorted(set(self.inflight.values()))}
+        if hasattr(self,'pallet'):
+            state['pallet']=dict(self.pallet.status(),blocked=self.pallet_blocked(),robots_ready=self.placement_robots() is not None)
+        self.state_pub.publish(String(data=json.dumps(state)))
 
     def robot_near(self, x, y, distance):
         """Name of a robot within `distance` of (x, y), or None."""
@@ -110,7 +151,11 @@ class ObstacleMover(Node):
             self.set_pose(name, x, y, m["z"], yaw)
 
     def on_event(self, msg):
-        ev = json.loads(msg.data)
+        try:
+            ev = json.loads(msg.data)
+            if not isinstance(ev,dict):raise ValueError('Obstacle event must be an object')
+        except (ValueError,TypeError) as error:
+            self.get_logger().warn('Invalid obstacle event: '+str(error));return
         name, place = ev.get("model"), ev.get("place")
         if name == "movers":                                              # switch all movers on / off
             self.active = place == "on"
@@ -122,6 +167,10 @@ class ObstacleMover(Node):
         spec = self.placeable.get(name)
         if spec is None:
             self.get_logger().error(f"unknown placeable model {name}")
+            return
+        if name=='pallet_1':
+            try:self.pallet.legacy(place,self.placement_robots(),ev.get('x'),ev.get('y'))
+            except (ValueError,TypeError) as error:self.get_logger().warn('Pallet placement rejected: '+str(error))
             return
         xy = spec["parked"] if place == "parked" else spec["drop_points"].get(place)
         if xy is None:

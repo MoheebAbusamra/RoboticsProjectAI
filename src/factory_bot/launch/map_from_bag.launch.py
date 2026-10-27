@@ -4,7 +4,6 @@
 #   SLAM Toolbox                 -> /map             final map (factory_map)
 #   ogm_mapper, ground-truth pose -> /ogm_map_truth  reference map (A: known poses)
 #   ogm_mapper, wheel odometry    -> /ogm_map_odom   drift map     (B: odometry poses)
-# AI-assisted (Claude): cite in report.
 #   ros2 launch factory_bot map_from_bag.launch.py                  # newest recording
 #   ros2 launch factory_bot map_from_bag.launch.py rate:=0.25       # even slower
 #   ros2 launch factory_bot map_from_bag.launch.py bag:=$HOME/factory_ws/bags/mapping_2026...

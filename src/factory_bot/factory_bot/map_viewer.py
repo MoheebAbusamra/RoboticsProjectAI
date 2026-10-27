@@ -1,6 +1,6 @@
 """map_viewer: a simple live window showing the map SLAM is drawing and where robot1 is.
 Use it instead of RViz's Map display when that display doesn't draw on the VM.
-AI-assisted (Claude): cite in report JUSTTTTTTTTTTTT TO VIEWWWW TEST."""
+"""
 import threading
 
 import numpy as np

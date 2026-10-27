@@ -3,7 +3,7 @@ map, checks every route, and saves the numbers and one picture for the report.
   ros2 run factory_bot plan_benchmark
   ros2 run factory_bot plan_benchmark --example STORES ASSEMBLY_B --repeat 5
 Outputs in ~/factory_ws/results/: planner_benchmark.csv, planner_example.png
-AI-assisted (Claude): cite in report."""
+"""
 import argparse
 import csv
 import itertools

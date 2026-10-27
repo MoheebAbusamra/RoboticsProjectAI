@@ -7,7 +7,7 @@ The robot (alone, in an empty spot) does three moves by itself:
 For each move it compares how far ODOMETRY thinks it went with how far it REALLY
 went (Gazebo ground truth) and prints the ratio. 1.000 = perfect.
   ros2 run factory_bot odom_test --ros-args -p use_sim_time:=true
-AI-assisted (Claude): cite in report."""
+"""
 import math
 
 import rclpy

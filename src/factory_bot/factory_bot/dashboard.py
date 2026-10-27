@@ -27,6 +27,7 @@ from factory_bot.dashboard_state import (DashboardState, ROBOT_NAMES, age, topic
 from factory_bot.dashboard_navigation import (PLANNERS, CONTROLLERS, SETTINGS_TOPIC, TARGETS,
                                               display_option, navigation_request, settings_consensus)
 from factory_bot.dashboard_maps import MapsPanel
+from factory_bot.dashboard_pallet import PalletPanel
 
 BRAND='son3a feh masr | Made in Egypt'
 BG='#1b1116'; PANEL='#2a1a22'; BORDER='#60424e'; TEXT='#f3e8d2'; MUTED='#c4b19d'
@@ -329,7 +330,7 @@ class Dashboard(QMainWindow):
         brand=QVBoxLayout();brand.setSpacing(2);brand.addWidget(text_label('son3a feh masr',20,ACCENT,True));brand.addWidget(text_label('Made in Egypt / FLEET OPERATIONS',10,MUTED,False,True))
         top.addLayout(brand);top.addStretch()
         self.nav=[]
-        for i,title in enumerate(['Overview','Mission queue','Maps','Diagnostics']):
+        for i,title in enumerate(['Overview','Mission queue','Maps','Obstacles','Diagnostics']):
             b=button(title,lambda checked=False,i=i:self.set_page(i));b.setObjectName('nav');b.setCheckable(True);b.setShortcut('Alt+'+str(i+1));self.nav.append(b);top.addWidget(b)
         top.addStretch();self.connection=text_label('CONNECTING',10,R2,False,True);top.addWidget(self.connection)
         self.simclock=text_label('--:--:-- SIM',11,MUTED,False,True);top.addWidget(self.simclock)
@@ -346,7 +347,9 @@ class Dashboard(QMainWindow):
         self.pages=QStackedWidget();outer.addWidget(self.pages,1)
         self.pages.addWidget(self.operations_page());self.pages.addWidget(self.missions_page())
         self.maps_panel=MapsPanel(share,state,self.send,self.stations,self.zones,bool(bridge))
-        self.pages.addWidget(self.maps_panel);self.pages.addWidget(self.diagnostics_page())
+        self.pages.addWidget(self.maps_panel)
+        self.pallet_panel=PalletPanel(share,state,self.send,self.stations,self.zones,bool(bridge))
+        self.pages.addWidget(self.pallet_panel);self.pages.addWidget(self.diagnostics_page())
         bottom=QHBoxLayout();bottom.addWidget(text_label('son3a feh masr | Made in Egypt',10,MUTED,False,True));bottom.addStretch()
         self.map_badge=text_label('MAP / AWAITING COORDINATOR',9,MUTED,False,True)
         bottom.addWidget(self.map_badge);outer.addLayout(bottom)
@@ -597,6 +600,7 @@ class Dashboard(QMainWindow):
         for a in self.actions:a.setEnabled(bool(fresh and self.bridge and not settings.get('applying') and not map_busy))
         self.navigation_button.setEnabled(not bool(map_busy))
         self.maps_panel.refresh(s)
+        self.pallet_panel.refresh(s)
         active_map=maps.get('active',{})
         set_text(self.map_badge,('MAP / '+active_map.get('name','UNKNOWN')) if maps.get('verified') and age(s,'/maps/status',now)<2.5 else 'MAP / '+maps.get('phase','UNCONFIRMED'))
         self.map_badge.setToolTip(active_map.get('source','Start the complete demo to verify the active map'))

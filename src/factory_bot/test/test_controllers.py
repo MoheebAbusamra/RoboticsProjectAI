@@ -1,5 +1,5 @@
 """Unit tests for the PID and Pure Pursuit followers (controllers.py) using the kinematic
-test bench (track_sim.py). Run without ROS. AI-assisted (Claude)."""
+test bench (track_sim.py). Run without ROS."""
 import math
 
 import numpy as np

@@ -16,7 +16,7 @@ Each robot:  IDLE -> TO_PICKUP -> LOADING (dwell) -> TO_DROPOFF -> UNLOADING (dw
              IDLE for return_after_s with nothing to do -> RETURNING (home); a new job can take it
 Every second the waiting jobs are given to idle robots by scheduler.assign():
   cost(robot, job) = A* route length from where the robot is to the job's pickup.
-AI-assisted (Claude): cite in report."""
+"""
 import csv
 import json
 import math

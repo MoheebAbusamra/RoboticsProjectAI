@@ -22,7 +22,7 @@ The rules, checked in this order every update:
                  A robot driving off to make room counts as highest priority while it does so.
                  Not when they drive the same way one behind the other: the rear one just slows down
                  (the navigator's lidar slow-down / stop does that).
-AI-assisted (Claude): cite in report."""
+"""
 import math
 import heapq
 from dataclasses import dataclass, field

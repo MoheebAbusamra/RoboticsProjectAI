@@ -1,5 +1,5 @@
 """Unit tests for live obstacles + replanning (live_layer.py, PlanningGrid.with_blocked).
-Run without ROS. AI-assisted (Claude)."""
+Run without ROS."""
 import math
 
 import numpy as np

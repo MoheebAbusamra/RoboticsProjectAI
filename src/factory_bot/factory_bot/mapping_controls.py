@@ -43,6 +43,7 @@ class MappingControls:
                 raise ValueError('Wait for automatic return to HOME_1 / HOME_2 before starting a survey')
         state=o.value('/fleet/obstacles_state')
         if not state or state.get('errors'):raise ValueError('Waiting for healthy obstacle-controller status')
+        if state.get('pallet',{}).get('pending'):raise ValueError('Wait for the pallet placement acknowledgement before mapping')
 
     def new_session(self,mode):
         if mode not in ('slam','ogm','slam_ogm','compare'):raise ValueError('Unknown mapping mode')
@@ -51,6 +52,9 @@ class MappingControls:
         self.started=time.monotonic();return self.session_id,str(folder)
 
     def world_snapshot(self):return self.owner.value('/fleet/obstacles_state')
+    def world_ready(self):
+        state=self.owner.value('/fleet/obstacles_state');pallet=state.get('pallet',{})
+        return bool(pallet.get('blocked') and not pallet.get('pending') and 'pallet_1' not in state.get('pending',[]))
     def pause(self,value):return self.owner.pause(value)
     def hold(self,value):self.owner.hold(value)
     def held(self):return self.owner.held()
@@ -137,7 +141,10 @@ class MappingControls:
 
     def restore_world(self,snapshot):
         for model,place in snapshot.get('places',{}).items():
-            self.events.publish(String(data=json.dumps({'model':model,'place':place})))
+            event={'model':model,'place':place}
+            if model=='pallet_1' and place=='grid':
+                pose=snapshot['pallet']['pose'];event.update(x=pose[0],y=pose[1])
+            self.events.publish(String(data=json.dumps(event)))
         self.events.publish(String(data=json.dumps({'model':'movers','place':'on' if snapshot.get('enabled') else 'off'})))
 
     def restored(self,snapshot):
@@ -146,5 +153,8 @@ class MappingControls:
         if set(state.get('pending',[])) & set(snapshot.get('places',{})):return False
         if not snapshot.get('enabled') and not state.get('settled'):return False
         if state.get('places')!=snapshot.get('places'):return False
+        if snapshot.get('places',{}).get('pallet_1')=='grid':
+            actual=state.get('pallet',{}).get('pose');expected=snapshot['pallet']['pose']
+            if not actual or math.dist(actual,expected)>.01:return False
         if any(o.value('/'+r+'/nav_status').get('survey_owner') for r in o.robots):return False
         return o.ready(o.machine.active.path,0.)[0]

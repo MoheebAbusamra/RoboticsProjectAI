@@ -7,7 +7,7 @@ Every scan: each lidar point (within max_range) is placed on the map at the robo
   anywhere else                                           -> a live obstacle: its cell is stamped "seen now"
 A cell counts as blocked while it was seen in the last memory_s seconds, so things that move
 away disappear by themselves after a moment. The planner uses grid.with_blocked(layer.mask(now)).
-AI-assisted (Claude): cite in report."""
+"""
 import math
 
 import numpy as np

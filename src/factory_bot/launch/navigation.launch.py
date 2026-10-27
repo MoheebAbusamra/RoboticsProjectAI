@@ -3,7 +3,6 @@
 #   ros2 launch factory_bot navigation.launch.py robots:=robot1
 #   ros2 launch factory_bot navigation.launch.py robots:=robot1 controller:=pid algorithm:=dijkstra
 # Send a goal:  ros2 topic pub --once /robot1/goto std_msgs/msg/String "{data: TOOL_CRIB}"
-# AI-assisted (Claude): cite in report.
 import os
 
 from ament_index_python.packages import get_package_share_directory

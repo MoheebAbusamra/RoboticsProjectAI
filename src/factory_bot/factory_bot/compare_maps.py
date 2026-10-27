@@ -8,7 +8,7 @@ Prints two numbers and writes a picture next to the test map:
   test walls that fit = % of test wall cells that have a reference wall within --tolerance
 Picture (<test>_vs_reference.ppm, open with eog): grey = reference walls,
 green = test walls that fit, red = test walls in the wrong place.
-AI-assisted (Claude): cite in report."""
+"""
 import argparse
 import os
 

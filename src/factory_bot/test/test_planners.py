@@ -1,4 +1,4 @@
-"""Unit tests for BFS / Dijkstra / A* (planners.py). Run without ROS. AI-assisted (Claude)."""
+"""Unit tests for BFS / Dijkstra / A* (planners.py). Run without ROS."""
 import math
 
 import numpy as np

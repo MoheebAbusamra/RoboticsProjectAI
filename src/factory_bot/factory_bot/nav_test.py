@@ -3,7 +3,7 @@ table and appends the results to ~/factory_ws/results/gazebo_nav.csv (one row pe
 Run it once per controller/algorithm to compare them on the REAL (Gazebo) robot:
   ros2 run factory_bot nav_test --ros-args -p use_sim_time:=true -p controller:=pid
   ros2 run factory_bot nav_test --ros-args -p use_sim_time:=true -p controller:=pure_pursuit
-AI-assisted (Claude): cite in report."""
+"""
 import csv
 import json
 import os

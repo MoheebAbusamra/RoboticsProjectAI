@@ -1,4 +1,4 @@
-"""Unit tests for the traffic rules (traffic.py). Run without ROS. AI-assisted (Claude)."""
+"""Unit tests for the traffic rules (traffic.py). Run without ROS."""
 import math
 
 import numpy as np

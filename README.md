@@ -1,5 +1,14 @@
 # Factory delivery fleet (ROS 2 Jazzy)
 
+## Dashboard dynamic pallet
+
+The **Obstacles** page places, moves and removes the existing pallet on a clickable
+0.25 m floor grid. Its full collision footprint must clear walls, machines,
+robots and the complete forklift/worker routes, even when those actors are
+paused. Placement is confirmed by Gazebo before the dashboard updates its status.
+Mapping temporarily parks the pallet and restores its selected position.
+See [pallet controls](docs/pallet_controls.md) for use and validation details.
+
 ## On-demand measured maps
 
 The dashboard uses antialiased DejaVu Sans Mono (with system monospace fallbacks).
